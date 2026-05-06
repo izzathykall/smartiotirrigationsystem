@@ -7,8 +7,8 @@
     // Admin account: full control
     // Viewer account: view data only, cannot control pumps or mode
     const USERS = [
-      { username: "admin", password: "123", role: "admin", label: "Admin" },
-      { username: "viewer", password: "123", role: "viewer", label: "Viewer" }
+      { username: "admin", password: "1234", role: "admin", label: "Admin" },
+      { username: "viewer", password: "1234", role: "viewer", label: "Viewer" }
     ];
 
     const firebaseConfig = {
