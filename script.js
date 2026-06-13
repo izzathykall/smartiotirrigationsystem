@@ -524,7 +524,7 @@
                     return "";
                   }
                   if (field === "rainState") {
-                    if (value === 0) return "NO RAIN";
+                    if (value === 0) return "CLEAR";
                     if (value === 1) return "RAIN";
                     return "";
                   }
@@ -596,7 +596,7 @@
       if (data.rainStatus === "RAIN") {
         setAnimatedText("rain", "RAIN");
       } else if (data.rainStatus === "NO_RAIN") {
-        setAnimatedText("rain", "NO RAIN");
+        setAnimatedText("rain", "CLEAR");
       } else if (data.rainState == "0") {
         setAnimatedText("rain", "RAIN");
       } else if (data.rainState == "1") {
