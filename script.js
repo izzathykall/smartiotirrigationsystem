@@ -600,7 +600,7 @@
       } else if (data.rainState == "0") {
         setAnimatedText("rain", "RAIN");
       } else if (data.rainState == "1") {
-        setAnimatedText("rain", "NO RAIN");
+        setAnimatedText("rain", "CLEAR");
       } else {
         setAnimatedText("rain", "--");
       }
