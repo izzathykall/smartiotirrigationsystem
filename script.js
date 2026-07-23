@@ -7,7 +7,7 @@ import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebase
 // Admin account: full control
 // Viewer account: view data only, cannot control pumps or mode
 const USERS = [
-  { username: "admin", password: "1234", role: "admin", label: "Admin" },
+  { username: "admin", password: "129306", role: "admin", label: "Admin" },
   { username: "viewer", password: "1234", role: "viewer", label: "Viewer" }
 ];
 
