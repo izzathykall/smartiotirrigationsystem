@@ -1,20 +1,20 @@
 <!DOCTYPE html>
 <html data-theme="night">
 <head>
-  <title>ESP32-S3 Smart Irrigation - Cyber Terminal</title>
+  <title>ESP32-S3 Smart Irrigation</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#030712">
+  <meta name="theme-color" content="#020617">
 
   <!-- Ikon Web & iOS -->
   <link rel="icon" type="image/png" href="icon.png">
   <link rel="apple-touch-icon" href="icon.png">
-  <!-- Web App Manifest -->
+  <!-- Web App Manifest (Nama: Smart Herbs) -->
   <link rel="manifest" href="manifest.json">
 
-  <!-- Font Plus Jakarta Sans untuk Tipografi Moden -->
+  <!-- Tambahan Font Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-
+  
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -23,10 +23,10 @@
   <div class="login-screen" id="loginScreen">
     <div class="login-card">
       <div class="login-brand">
-        <div class="brand-icon" aria-hidden="true">🛰️</div>
+        <div class="brand-icon" aria-hidden="true">🌱</div>
         <div class="login-copy">
-          <h2>Cyber Irrigation</h2>
-          <p>Secure cyber-terminal access for telemetry monitoring and relay control.</p>
+          <h2>Smart Irrigation</h2>
+          <p>Secure access for realtime monitoring and pump control.</p>
         </div>
       </div>
 
@@ -36,45 +36,45 @@
       </div>
 
       <div class="auth-form" id="loginForm">
-        <label class="login-field-label" for="loginEmail">Operator Email</label>
+        <label class="login-field-label" for="loginEmail">Email address</label>
         <input
           type="email"
           id="loginEmail"
           class="login-input"
-          placeholder="operator@system.io"
+          placeholder="name@example.com"
           autocomplete="email"
           inputmode="email"
         >
 
-        <label class="login-field-label" for="loginPassword">Access Password</label>
+        <label class="login-field-label" for="loginPassword">Password</label>
         <input
           type="password"
           id="loginPassword"
           class="login-input"
-          placeholder="Enter security password"
+          placeholder="Enter your password"
           autocomplete="current-password"
         >
 
-        <button class="login-btn" id="loginButton" onclick="login()">INITIALIZE SYSTEM LOGIN</button>
-        <button class="forgot-password-btn" type="button" onclick="forgotPassword()">Reset access key?</button>
+        <button class="login-btn" id="loginButton" onclick="login()">LOGIN TO APP</button>
+        <button class="forgot-password-btn" type="button" onclick="forgotPassword()">Forgot password?</button>
       </div>
 
       <div class="auth-form" id="registerForm" hidden>
-        <label class="login-field-label" for="registerName">Operator Name</label>
+        <label class="login-field-label" for="registerName">Full name</label>
         <input
           type="text"
           id="registerName"
           class="login-input"
-          placeholder="Enter full name"
+          placeholder="Enter your full name"
           autocomplete="name"
         >
 
-        <label class="login-field-label" for="registerEmail">Operator Email</label>
+        <label class="login-field-label" for="registerEmail">Email address</label>
         <input
           type="email"
           id="registerEmail"
           class="login-input"
-          placeholder="operator@system.io"
+          placeholder="name@example.com"
           autocomplete="email"
           inputmode="email"
         >
@@ -88,17 +88,17 @@
           autocomplete="new-password"
         >
 
-        <label class="login-field-label" for="registerConfirmPassword">Confirm Password</label>
+        <label class="login-field-label" for="registerConfirmPassword">Confirm password</label>
         <input
           type="password"
           id="registerConfirmPassword"
           class="login-input"
-          placeholder="Re-enter password"
+          placeholder="Re-enter your password"
           autocomplete="new-password"
         >
 
-        <button class="login-btn register-submit-btn" id="registerButton" onclick="registerUser()">REQUEST ACCESS</button>
-        <p class="register-note">New operator registrations require clearance from system administrator.</p>
+        <button class="login-btn register-submit-btn" id="registerButton" onclick="registerUser()">CREATE ACCOUNT</button>
+        <p class="register-note">New accounts must be approved by an administrator before login access is enabled.</p>
       </div>
 
       <div class="login-error" id="loginError" role="status" aria-live="polite"></div>
@@ -106,12 +106,43 @@
   </div>
 
   <div class="app">
-    <div class="main-area">
-      <div class="header">
+    <!-- Sidebar SaaS Navigasi Kiri -->
+    <aside class="sidebar" aria-label="Sidebar navigation">
+      <div class="side-brand">
+        <div class="side-logo" aria-hidden="true">🌱</div>
         <div>
-          <div class="eyebrow">⚡ Cyber-Tech Command Center</div>
-          <h1>Smart Irrigation Telemetry & Control Terminal</h1>
-          <p>Real-time node sensor monitoring, matrix mode switching, pump telemetry, and historical diagnostics.</p>
+          <h3>Smart Herbs</h3>
+          <span>IoT Irrigation</span>
+        </div>
+      </div>
+
+      <nav class="nav-list" role="navigation">
+        <a href="#dashboard" class="nav-item active">
+          <span>📊</span> Dashboard
+        </a>
+        <a href="#sensors" class="nav-item">
+          <span>🌡️</span> Sensors & Power
+        </a>
+        <a href="#pumps" class="nav-item">
+          <span>⚙️</span> Pump Controls
+        </a>
+        <button class="nav-item manage-users-btn" id="sidebarManageUsers" type="button" onclick="openUserManagement()" style="width:100%; text-align:left;">
+          <span>👥</span> Manage Users
+        </button>
+      </nav>
+
+      <div class="mini-panel">
+        <small>System Status</small>
+        <strong id="sidebarSystemStatus">Operational</strong>
+      </div>
+    </aside>
+
+    <div class="main-area">
+      <div class="header" id="dashboard">
+        <div>
+          <div class="eyebrow">● IoT Smart Irrigation App</div>
+          <h1>Smart Irrigation Monitoring System For Leafy Herbs</h1>
+          <p>Realtime sensor monitoring, mode switching, pump control, and history data in one clean professional app.</p>
         </div>
 
         <div class="top-actions">
@@ -134,10 +165,10 @@
             >⚙️</button>
 
             <div class="settings-menu" id="settingsMenu">
-              <div class="settings-menu-title">Terminal Config</div>
+              <div class="settings-menu-title">Settings</div>
               <button class="settings-menu-btn manage-users-btn" id="manageUsersButton" onclick="openUserManagement()">👥 MANAGE USERS</button>
-              <button class="settings-menu-btn delete-history-btn" onclick="deleteAllHistory()">🗑 PURGE ALL HISTORY</button>
-              <button class="settings-menu-btn logout-btn" onclick="logout()">↪ TERMINATE SESSION</button>
+              <button class="settings-menu-btn delete-history-btn" onclick="deleteAllHistory()">🗑 DELETE ALL HISTORY</button>
+              <button class="settings-menu-btn logout-btn" onclick="logout()">↪ LOG OUT</button>
             </div>
           </div>
         </div>
@@ -147,7 +178,7 @@
         <div class="mode-panel">
           <div class="mode-top">
             <div>
-              <div class="mode-title">System Execution Mode</div>
+              <div class="mode-title">System Mode</div>
               <p class="manual-note" id="modeNote"></p>
             </div>
 
@@ -155,15 +186,15 @@
           </div>
 
           <div class="mode-buttons">
-            <button class="mode-btn" id="autoBtn" onclick="setMode('AUTO')">AUTO MATRIX</button>
-            <button class="mode-btn" id="manualBtn" onclick="setMode('MANUAL')">MANUAL OVERRIDE</button>
+            <button class="mode-btn" id="autoBtn" onclick="setMode('AUTO')">AUTO MODE</button>
+            <button class="mode-btn" id="manualBtn" onclick="setMode('MANUAL')">MANUAL MODE</button>
           </div>
         </div>
 
-        <div class="section-row">
+        <div class="section-row" id="sensors">
           <div>
-            <div class="section-title">Telemetry Sensor Matrix</div>
-            <div class="section-subtitle">Live environmental metrics, moisture levels, precipitation, and tank diagnostics.</div>
+            <div class="section-title">Sensor Data</div>
+            <div class="section-subtitle">Temperature, humidity, soil, rain and water level readings.</div>
           </div>
         </div>
 
@@ -171,7 +202,7 @@
           <div class="sensor-card" onclick="openGraph('temperature')">
             <div class="sensor-top">
               <div class="icon">🌡️</div>
-              <div class="chip">NODE 01</div>
+              <div class="chip">LIVE</div>
             </div>
             <div>
               <div class="label">Temperature</div>
@@ -182,7 +213,7 @@
           <div class="sensor-card" onclick="openGraph('humidity')">
             <div class="sensor-top">
               <div class="icon">💧</div>
-              <div class="chip">NODE 02</div>
+              <div class="chip">LIVE</div>
             </div>
             <div>
               <div class="label">Humidity</div>
@@ -193,7 +224,7 @@
           <div class="sensor-card" onclick="openGraph('moisturePercent')">
             <div class="sensor-top">
               <div class="icon">🌱</div>
-              <div class="chip">NODE 03</div>
+              <div class="chip">LIVE</div>
             </div>
             <div>
               <div class="label">Soil Moisture</div>
@@ -204,7 +235,7 @@
           <div class="sensor-card" onclick="openGraph('rainState')">
             <div class="sensor-top">
               <div class="icon">🌧️</div>
-              <div class="chip">NODE 04</div>
+              <div class="chip">LIVE</div>
             </div>
             <div>
               <div class="label">Rain Sensor</div>
@@ -215,11 +246,11 @@
           <div class="sensor-card" onclick="openGraph('borewellLevel')">
             <div class="sensor-top">
               <div class="icon">🕳️</div>
-              <div class="chip">TANK A</div>
+              <div class="chip">LIVE</div>
             </div>
             <div class="water-level-wrap">
               <div class="level-text-block">
-                <div class="label">Borewell Level</div>
+                <div class="label">Borewell Water Level</div>
                 <div class="small-value" id="borewell">--</div>
               </div>
               <div>
@@ -234,11 +265,11 @@
           <div class="sensor-card" onclick="openGraph('spareTankLevel')">
             <div class="sensor-top">
               <div class="icon">🚰</div>
-              <div class="chip">TANK B</div>
+              <div class="chip">LIVE</div>
             </div>
             <div class="water-level-wrap">
               <div class="level-text-block">
-                <div class="label">Spare Tank Level</div>
+                <div class="label">Spare Tank Water Level</div>
                 <div class="small-value" id="spareTank">--</div>
               </div>
               <div>
@@ -253,8 +284,8 @@
 
         <div class="section-row power-section-row">
           <div>
-            <div class="section-title">Power Grid Telemetry</div>
-            <div class="section-subtitle">Battery voltage, charge amperage, photovoltaic output, and solar charging status.</div>
+            <div class="section-title">Power Monitoring</div>
+            <div class="section-subtitle">Battery voltage, charging current, solar power and solar charging status.</div>
           </div>
         </div>
 
@@ -262,7 +293,7 @@
           <div class="sensor-card power-card" onclick="openGraph('batteryVoltage')">
             <div class="sensor-top">
               <div class="icon">🔋</div>
-              <div class="chip">PWR 01</div>
+              <div class="chip">LIVE</div>
             </div>
             <div>
               <div class="label">Battery Voltage</div>
@@ -273,7 +304,7 @@
           <div class="sensor-card power-card" onclick="openGraph('chargingCurrent')">
             <div class="sensor-top">
               <div class="icon">⚡</div>
-              <div class="chip">PWR 02</div>
+              <div class="chip">LIVE</div>
             </div>
             <div>
               <div class="label">Charging Current</div>
@@ -284,7 +315,7 @@
           <div class="sensor-card power-card" onclick="openGraph('chargingPower')">
             <div class="sensor-top">
               <div class="icon">☀️</div>
-              <div class="chip">PWR 03</div>
+              <div class="chip">LIVE</div>
             </div>
             <div>
               <div class="label">Solar Power</div>
@@ -295,21 +326,21 @@
           <div class="sensor-card power-card" onclick="openGraph('solarChargingStatus')">
             <div class="sensor-top">
               <div class="icon">🔌</div>
-              <div class="chip">PWR 04</div>
+              <div class="chip">LIVE</div>
             </div>
             <div>
-              <div class="label">Solar Status</div>
+              <div class="label">Solar Charging Status</div>
               <div class="small-value" id="solarStatus">--</div>
             </div>
           </div>
         </div>
 
-        <div class="tap-note">📈 Tap any telemetry card to launch diagnostic history analytics</div>
+        <div class="tap-note">📈 Tap any sensor or power card to view history data</div>
 
-        <div class="section-row">
+        <div class="section-row" id="pumps">
           <div>
-            <div class="section-title">Relay Pump Control Array</div>
-            <div class="section-subtitle">Manual overrides become active only when system execution mode is MANUAL.</div>
+            <div class="section-title">Pump Control</div>
+            <div class="section-subtitle">Manual pump buttons unlock only when system mode is MANUAL.</div>
           </div>
         </div>
 
@@ -321,8 +352,8 @@
             </div>
 
             <div class="button-row">
-              <button class="btn-on manual-control" onclick="setPump1('ON')">ENGAGE</button>
-              <button class="btn-off manual-control" onclick="setPump1('OFF')">DISENGAGE</button>
+              <button class="btn-on manual-control" onclick="setPump1('ON')">TURN ON</button>
+              <button class="btn-off manual-control" onclick="setPump1('OFF')">TURN OFF</button>
             </div>
           </div>
 
@@ -333,19 +364,19 @@
             </div>
 
             <div class="button-row">
-              <button class="btn-on manual-control" onclick="setPump2('ON')">ENGAGE</button>
-              <button class="btn-off manual-control" onclick="setPump2('OFF')">DISENGAGE</button>
+              <button class="btn-on manual-control" onclick="setPump2('ON')">TURN ON</button>
+              <button class="btn-off manual-control" onclick="setPump2('OFF')">TURN OFF</button>
             </div>
           </div>
         </div>
 
         <p class="manual-note" id="controlNote">
-          Relay status synchronized via Firebase database pipeline.
+          Pump status is taken from Firebase control.
         </p>
       </div>
 
       <div class="footer">
-        Cyber-Tech IoT Irrigation System By Izzat.hkl
+        IoT Smart Irrigation System By Izzat.hkl
       </div>
     </div>
   </div>
@@ -354,39 +385,39 @@
     <div class="modal-content user-management-content">
       <div class="modal-top user-management-header">
         <div class="user-management-heading">
-          <span class="user-management-eyebrow">Command Authorization</span>
-          <h2>Operator Management</h2>
-          <p class="user-management-subtitle">Authorize operator accounts and assign clearance access levels.</p>
+          <span class="user-management-eyebrow">Administrator workspace</span>
+          <h2>User Management</h2>
+          <p class="user-management-subtitle">Approve registered accounts and assign the correct level of system access.</p>
         </div>
         <button class="close-btn" type="button" onclick="closeUserManagement()">Close</button>
       </div>
 
-      <section class="user-management-metrics" aria-label="Operator summary">
+      <section class="user-management-metrics" aria-label="User account summary">
         <article class="user-management-metric metric-total">
-          <span class="user-management-metric-label">Total Operators</span>
+          <span class="user-management-metric-label">Total Users</span>
           <strong class="user-management-metric-value" id="userMetricTotal">—</strong>
           <span class="user-management-metric-note">Registered accounts</span>
         </article>
         <article class="user-management-metric metric-pending">
           <span class="user-management-metric-label">Pending</span>
           <strong class="user-management-metric-value" id="userMetricPending">—</strong>
-          <span class="user-management-metric-note">Awaiting clearance</span>
+          <span class="user-management-metric-note">Needs review</span>
         </article>
         <article class="user-management-metric metric-approved">
-          <span class="user-management-metric-label">Cleared</span>
+          <span class="user-management-metric-label">Approved</span>
           <strong class="user-management-metric-value" id="userMetricApproved">—</strong>
-          <span class="user-management-metric-note">Active access</span>
+          <span class="user-management-metric-note">Can sign in</span>
         </article>
         <article class="user-management-metric metric-rejected">
           <span class="user-management-metric-label">Rejected</span>
           <strong class="user-management-metric-value" id="userMetricRejected">—</strong>
-          <span class="user-management-metric-note">Denied access</span>
+          <span class="user-management-metric-note">Access declined</span>
         </article>
       </section>
 
       <div class="user-management-toolbar">
         <div class="user-management-field user-management-search-field">
-          <label for="userManagementSearch">Search operators</label>
+          <label for="userManagementSearch">Search users</label>
           <div class="user-management-input-shell">
             <span class="user-management-search-icon" aria-hidden="true">⌕</span>
             <input id="userManagementSearch" type="search" placeholder="Search by name or email" autocomplete="off" disabled>
@@ -394,35 +425,35 @@
         </div>
 
         <div class="user-management-field user-management-filter-field">
-          <label for="userManagementStatusFilter">Clearance status</label>
+          <label for="userManagementStatusFilter">Account status</label>
           <select id="userManagementStatusFilter" disabled>
             <option value="all">All statuses</option>
             <option value="pending">Pending</option>
-            <option value="approved">Cleared</option>
+            <option value="approved">Approved</option>
             <option value="rejected">Rejected</option>
           </select>
         </div>
       </div>
 
       <div class="user-management-results-bar">
-        <p id="userManagementResultCount">Loading operator accounts…</p>
-        <p class="user-management-results-hint">Review and commit updates per account.</p>
+        <p id="userManagementResultCount">Loading user accounts…</p>
+        <p class="user-management-results-hint">Review and save each account individually.</p>
       </div>
 
       <div class="user-management-message" id="userManagementMessage" aria-live="polite"></div>
-      <div class="user-management-list" id="userManagementList" role="list" aria-label="Operator accounts"></div>
+      <div class="user-management-list" id="userManagementList" role="list" aria-label="User accounts"></div>
     </div>
   </div>
 
   <div class="modal" id="graphModal">
     <div class="modal-content">
       <div class="modal-top">
-        <h2 id="graphTitle">Telemetry Diagnostics</h2>
+        <h2 id="graphTitle">Sensor History</h2>
         <button class="close-btn" onclick="closeGraph()">Close</button>
       </div>
 
       <div class="history-controls">
-        <button onclick="moveHistory(-1)">← Past Data</button>
+        <button onclick="moveHistory(-1)">← Older</button>
 
         <input
           type="range"
@@ -433,10 +464,10 @@
           oninput="slideHistory(this.value)"
         >
 
-        <button onclick="moveHistory(1)">Recent →</button>
+        <button onclick="moveHistory(1)">Newer →</button>
 
         <div class="history-info" id="historyInfo">
-          Showing real-time stream
+          Showing latest data
         </div>
       </div>
 
