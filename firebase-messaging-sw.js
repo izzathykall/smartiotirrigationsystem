@@ -15,12 +15,23 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  console.log("Mesej diterima di latar belakang: ", payload);
-  const notificationTitle = payload.notification?.title || "Smart Herbs";
+  console.log("Background message received: ", payload);
+  const notificationTitle = payload.data?.title || payload.notification?.title || "Smart Irrigation";
   const notificationOptions = {
-    body: payload.notification?.body || "Ada kemas kini baharu daripada sistem pengairan.",
-    icon: "icon.png"
+    body: payload.data?.body || payload.notification?.body || "A new irrigation system alert is available.",
+    icon: "icon.png",
+    badge: "icon.png",
+    tag: payload.data?.type || "smart-irrigation-alert",
+    renotify: false,
+    data: {
+      url: "./"
+    }
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+  event.waitUntil(clients.openWindow(event.notification.data?.url || "./"));
 });

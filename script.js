@@ -1,4 +1,10 @@
-import { normalizeRole, hasSystemControlAccess, canManageUsers, canDeleteAllHistory } from "./access-control.mjs";
+import {
+  normalizeRole,
+  hasSystemControlAccess,
+  canManageUsers,
+  canDeleteAllHistory,
+  canUpdateFirmware
+} from "./access-control.mjs";
 import {
   normalizeUserStatus,
   getUserInitials,
@@ -16,9 +22,9 @@ import {
   onAuthStateChanged,
   sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
-import { getDatabase, ref, onValue, get, set, update, remove } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
+import { getDatabase, ref, push, onValue, get, set, update, remove } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
 // MODIFICATION: Import Firebase Messaging
-import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-messaging.js";
+import { getMessaging, getToken, deleteToken, onMessage, isSupported } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-messaging.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCbw3uRsDJroD8Z96aXXpduyIufZrwRhM0",
@@ -36,13 +42,34 @@ const auth = getAuth(app);
 auth.languageCode = "en";
 const database = getDatabase(app);
 
-// MODIFICATION: Initialize Messaging
-const messaging = getMessaging(app);
+// Firebase Cloud Messaging only works in a supported secure browser context.
+// Keep the rest of the web app usable over the Orange Pi's local HTTP address.
+let messaging = null;
+const CURRENT_FCM_TOKEN_KEY = "smartIrrigationCurrentFcmToken";
+
+async function initializeMessaging() {
+  try {
+    if (!window.isSecureContext || !(await isSupported())) return;
+
+    messaging = getMessaging(app);
+    onMessage(messaging, (payload) => {
+      console.log("Foreground message received: ", payload);
+      const notificationTitle = payload.data?.title || payload.notification?.title || "Smart Irrigation";
+      const notificationBody = payload.data?.body || payload.notification?.body || "A new irrigation system alert is available.";
+
+      alert(`${notificationTitle}\n${notificationBody}`);
+    });
+  } catch (error) {
+    console.warn("Firebase Messaging tidak tersedia dalam pelayar ini.", error);
+  }
+}
+
+initializeMessaging();
 
 // MODIFICATION: Push Notification Setup Function
 async function setupPushNotifications(userUid) {
   try {
-    if (!("Notification" in window)) return;
+    if (!messaging || !window.isSecureContext || !("Notification" in window)) return;
 
     const permission = await Notification.requestPermission();
     
@@ -58,24 +85,16 @@ async function setupPushNotifications(userUid) {
 
       if (token) {
         console.log("FCM Token berjaya didapati:", token);
-        // Simpan sebagai senarai multi-token supaya peranti lain tidak terpadam
+        // One account may be used on several phones. Each device keeps its own
+        // token, while the Orange Pi cleanup tool removes obsolete tokens when needed.
         await set(ref(database, `users/${userUid}/fcmTokens/${token}`), true);
+        localStorage.setItem(CURRENT_FCM_TOKEN_KEY, token);
       }
     }
   } catch (error) {
     console.error("Ralat mendapatkan token notifikasi:", error);
   }
 }
-
-
-// MODIFICATION: Foreground Notification Handler
-onMessage(messaging, (payload) => {
-  console.log("Mesej diterima di foreground: ", payload);
-  const notificationTitle = payload.notification?.title || "Smart Herbs";
-  const notificationBody = payload.notification?.body || "Ada kemas kini baharu daripada sistem pengairan.";
-
-  alert(`${notificationTitle}\n${notificationBody}`);
-});
 
 
 const latestRef = ref(database, "sensor/latest");
@@ -102,6 +121,15 @@ let unsubscribeHistory = null;
 let userManagementEntries = [];
 let userManagementLoading = false;
 let userManagementError = "";
+let selectedFirmwareFile = null;
+let otaUploadInProgress = false;
+let otaDeviceOnline = false;
+
+const MAX_FIRMWARE_FILE_SIZE = 16 * 1024 * 1024;
+const OTA_API_URL = "/api/ota";
+const OTA_USE_FIREBASE_RELAY = window.location.hostname.toLowerCase().endsWith("github.io");
+const OTA_RELAY_STATUS_MAX_AGE_MS = 60 * 1000;
+const OTA_RELAY_TIMEOUT_MS = 5 * 60 * 1000;
 
 const graphInfo = {
   temperature: { title: "Temperature Data History", label: "Temperature °C" },
@@ -153,6 +181,7 @@ function applyRolePermissions() {
   const controlNote = document.getElementById("controlNote");
   const deleteHistoryButton = document.querySelector(".delete-history-btn");
   const manageUsersButton = document.getElementById("manageUsersButton");
+  const firmwareUpdateButton = document.getElementById("firmwareUpdateButton");
 
   if (manageUsersButton) {
     const allowed = isAdministrator();
@@ -171,6 +200,15 @@ function applyRolePermissions() {
     deleteHistoryButton.title = allowed
       ? ""
       : "Only an Administrator account can delete all history data.";
+  }
+
+  if (firmwareUpdateButton) {
+    const allowed = canUpdateFirmware(role);
+    firmwareUpdateButton.disabled = !allowed;
+    firmwareUpdateButton.setAttribute("aria-disabled", String(!allowed));
+    firmwareUpdateButton.title = allowed
+      ? ""
+      : "Only an Administrator account can install firmware updates.";
   }
 
   if (role === "viewer") {
@@ -707,6 +745,431 @@ window.closeUserManagement = function() {
   setTimeout(() => { modal.style.display = "none"; }, 180);
 };
 
+function getOtaElements() {
+  return {
+    modal: document.getElementById("firmwareUpdateModal"),
+    fileInput: document.getElementById("firmwareFile"),
+    fileCard: document.getElementById("otaFileCard"),
+    fileName: document.getElementById("otaFileName"),
+    fileSize: document.getElementById("otaFileSize"),
+    version: document.getElementById("firmwareVersion"),
+    confirm: document.getElementById("firmwareConfirm"),
+    installButton: document.getElementById("otaInstallButton"),
+    closeButton: document.getElementById("firmwareUpdateCloseButton"),
+    cancelButton: document.getElementById("otaCancelButton"),
+    removeButton: document.getElementById("otaRemoveFileButton"),
+    dropZone: document.getElementById("otaDropZone"),
+    progress: document.getElementById("otaProgress"),
+    progressLabel: document.getElementById("otaProgressLabel"),
+    progressPercent: document.getElementById("otaProgressPercent"),
+    progressBar: document.getElementById("otaProgressBar"),
+    progressFill: document.getElementById("otaProgressFill"),
+    message: document.getElementById("otaMessage"),
+    deviceState: document.getElementById("otaDeviceState"),
+    deviceStatus: document.getElementById("otaDeviceStatus"),
+    lastUpdate: document.getElementById("otaLastUpdate")
+  };
+}
+
+function formatFirmwareSize(bytes) {
+  if (!Number.isFinite(bytes) || bytes < 1) return "0 KB";
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function setOtaMessage(message = "", type = "") {
+  const element = getOtaElements().message;
+  if (!element) return;
+  element.textContent = message;
+  element.className = `ota-message${type ? ` ${type}` : ""}`;
+}
+
+function setOtaDeviceState(state, message) {
+  const { deviceState, deviceStatus } = getOtaElements();
+  otaDeviceOnline = state === "online";
+  if (deviceState) deviceState.className = `ota-device-state is-${state}`;
+  if (deviceStatus) deviceStatus.textContent = message;
+  updateOtaInstallButton();
+}
+
+function setOtaProgress(percent, label) {
+  const value = Math.max(0, Math.min(100, Math.round(percent)));
+  const { progress, progressLabel, progressPercent, progressBar, progressFill } = getOtaElements();
+  if (progress) progress.hidden = false;
+  if (progressLabel && label) progressLabel.textContent = label;
+  if (progressPercent) progressPercent.textContent = `${value}%`;
+  if (progressBar) progressBar.setAttribute("aria-valuenow", String(value));
+  if (progressFill) progressFill.style.width = `${value}%`;
+}
+
+function updateOtaInstallButton() {
+  const { installButton, confirm } = getOtaElements();
+  if (!installButton) return;
+  installButton.disabled = !selectedFirmwareFile || !confirm?.checked || !otaDeviceOnline || otaUploadInProgress;
+}
+
+function setOtaUploading(isUploading) {
+  otaUploadInProgress = isUploading;
+  const {
+    fileInput,
+    version,
+    confirm,
+    installButton,
+    closeButton,
+    cancelButton,
+    removeButton,
+    dropZone
+  } = getOtaElements();
+
+  if (fileInput) fileInput.disabled = isUploading;
+  if (version) version.disabled = isUploading;
+  if (confirm) confirm.disabled = isUploading;
+  if (closeButton) closeButton.disabled = isUploading;
+  if (cancelButton) cancelButton.disabled = isUploading;
+  if (removeButton) removeButton.disabled = isUploading;
+  dropZone?.classList.toggle("is-disabled", isUploading);
+
+  if (installButton) {
+    installButton.textContent = isUploading ? "Installing…" : "Upload & Install";
+  }
+  updateOtaInstallButton();
+}
+
+async function getOtaAuthToken() {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Your login session has ended. Please log in again.");
+  return user.getIdToken();
+}
+
+async function parseApiResponse(response) {
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.message || `Orange Pi returned HTTP ${response.status}.`);
+  }
+  return data;
+}
+
+function renderOtaLastUpdate(lastUpdate) {
+  const lastUpdateElement = getOtaElements().lastUpdate;
+  if (!lastUpdateElement) return;
+
+  if (lastUpdate?.completedAt) {
+    const date = new Date(lastUpdate.completedAt);
+    const version = lastUpdate.version ? ` · ${lastUpdate.version}` : "";
+    lastUpdateElement.textContent = `Last deployment: ${date.toLocaleString("en-MY")}${version}`;
+  } else {
+    lastUpdateElement.textContent = "Last deployment: none recorded";
+  }
+}
+
+async function refreshOtaStatusFromFirebase() {
+  const [statusSnapshot, lastUpdateSnapshot] = await Promise.all([
+    get(ref(database, "ota/deviceStatus")),
+    get(ref(database, "ota/lastUpdate"))
+  ]);
+
+  const status = statusSnapshot.val() || {};
+  const checkedAt = Number(status.checkedAt || 0);
+  const isFresh = checkedAt > 0 && Date.now() - checkedAt <= OTA_RELAY_STATUS_MAX_AGE_MS;
+
+  if (!status.online || !isFresh) {
+    throw new Error(status.message || "Orange Pi or ESP32-S3 has not reported recently.");
+  }
+
+  const deviceName = status.device?.name || "ESP32-S3 online";
+  setOtaDeviceState("online", deviceName);
+  renderOtaLastUpdate(lastUpdateSnapshot.val());
+}
+
+async function refreshOtaStatusDirect() {
+  const token = await getOtaAuthToken();
+  const response = await fetch(`${OTA_API_URL}/status`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store"
+  });
+  const data = await parseApiResponse(response);
+  const deviceName = data.device?.name || "ESP32-S3 online";
+  setOtaDeviceState("online", deviceName);
+  renderOtaLastUpdate(data.lastUpdate);
+}
+
+async function refreshOtaStatus() {
+  setOtaDeviceState("checking", "Checking…");
+
+  try {
+    if (OTA_USE_FIREBASE_RELAY) {
+      await refreshOtaStatusFromFirebase();
+    } else {
+      await refreshOtaStatusDirect();
+    }
+  } catch (error) {
+    console.error("Unable to reach OTA target", error);
+    setOtaDeviceState("offline", "ESP32-S3 unavailable");
+    setOtaMessage(error.message || "The Orange Pi could not reach the ESP32-S3.", "error");
+  }
+}
+
+window.openFirmwareUpdate = function() {
+  if (!canUpdateFirmware(getCurrentRole())) {
+    alert("Only an Administrator account can install firmware updates.");
+    return;
+  }
+
+  closeSettingsMenu();
+  window.clearFirmwareFile();
+  const { modal, confirm, version, progress, lastUpdate } = getOtaElements();
+  if (!modal) return;
+
+  if (confirm) confirm.checked = false;
+  if (version) version.value = "";
+  if (progress) progress.hidden = true;
+  if (lastUpdate) lastUpdate.textContent = "Last deployment: —";
+  setOtaMessage("");
+  setOtaUploading(false);
+  modal.style.display = "flex";
+  modal.setAttribute("aria-hidden", "false");
+  requestAnimationFrame(() => modal.classList.add("show"));
+  refreshOtaStatus();
+};
+
+window.closeFirmwareUpdate = function() {
+  if (otaUploadInProgress) return;
+  const { modal } = getOtaElements();
+  if (!modal) return;
+  modal.classList.remove("show");
+  modal.setAttribute("aria-hidden", "true");
+  setTimeout(() => { modal.style.display = "none"; }, 180);
+};
+
+window.clearFirmwareFile = function() {
+  selectedFirmwareFile = null;
+  const { fileInput, fileCard, fileName, fileSize } = getOtaElements();
+  if (fileInput) fileInput.value = "";
+  if (fileCard) fileCard.hidden = true;
+  if (fileName) fileName.textContent = "—";
+  if (fileSize) fileSize.textContent = "—";
+  updateOtaInstallButton();
+};
+
+window.selectFirmwareFile = async function(file) {
+  window.clearFirmwareFile();
+  setOtaMessage("");
+  if (!file) return;
+
+  if (!file.name.toLowerCase().endsWith(".bin")) {
+    setOtaMessage("Choose a compiled ESP32 firmware file with the .bin extension.", "error");
+    return;
+  }
+  if (file.size < 2 || file.size > MAX_FIRMWARE_FILE_SIZE) {
+    setOtaMessage("The firmware file must be between 2 bytes and 16 MB.", "error");
+    return;
+  }
+
+  try {
+    const firstByte = new Uint8Array(await file.slice(0, 1).arrayBuffer())[0];
+    if (firstByte !== 0xe9) {
+      setOtaMessage("This file does not look like a valid ESP32 application image.", "error");
+      return;
+    }
+  } catch (error) {
+    setOtaMessage("The selected file could not be read.", "error");
+    return;
+  }
+
+  selectedFirmwareFile = file;
+  const { fileCard, fileName, fileSize } = getOtaElements();
+  if (fileCard) fileCard.hidden = false;
+  if (fileName) fileName.textContent = file.name;
+  if (fileSize) fileSize.textContent = formatFirmwareSize(file.size);
+  updateOtaInstallButton();
+};
+
+function arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = "";
+
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    const chunk = bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length));
+    binary += String.fromCharCode(...chunk);
+  }
+
+  return btoa(binary);
+}
+
+async function sha256Hex(buffer) {
+  if (!window.crypto?.subtle) {
+    throw new Error("This browser cannot verify firmware integrity. Use the HTTPS GitHub Pages address.");
+  }
+
+  const digest = await window.crypto.subtle.digest("SHA-256", buffer);
+  return Array.from(new Uint8Array(digest), value => value.toString(16).padStart(2, "0")).join("");
+}
+
+function waitForOtaRelayJob(jobRef) {
+  return new Promise((resolve, reject) => {
+    let unsubscribe = () => {};
+    const timeout = setTimeout(() => {
+      unsubscribe();
+      reject(new Error("The Orange Pi did not finish the update within five minutes."));
+    }, OTA_RELAY_TIMEOUT_MS);
+
+    const finish = callback => value => {
+      clearTimeout(timeout);
+      unsubscribe();
+      callback(value);
+    };
+
+    unsubscribe = onValue(jobRef, snapshot => {
+      const job = snapshot.val();
+      if (!job) return;
+
+      if (job.status === "pending") {
+        setOtaProgress(80, "Firmware queued securely in Firebase…");
+      } else if (job.status === "processing") {
+        setOtaProgress(88, "Orange Pi is validating firmware…");
+      } else if (job.status === "forwarding") {
+        setOtaProgress(96, "Orange Pi is installing firmware on ESP32-S3…");
+      } else if (job.status === "success") {
+        finish(resolve)(job);
+      } else if (job.status === "failed") {
+        finish(reject)(new Error(job.message || "Firmware installation failed."));
+      }
+    }, error => finish(reject)(error));
+  });
+}
+
+async function uploadFirmwareThroughFirebase(file, version) {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Your login session has ended. Please log in again.");
+
+  setOtaProgress(5, "Reading firmware file…");
+  const firmwareBuffer = await file.arrayBuffer();
+  setOtaProgress(20, "Checking firmware integrity…");
+  const sha256 = await sha256Hex(firmwareBuffer);
+  setOtaProgress(35, "Preparing secure Firebase transfer…");
+  const firmwareBase64 = arrayBufferToBase64(firmwareBuffer);
+
+  const jobRef = push(ref(database, "ota/requests"));
+  if (!jobRef.key) throw new Error("Unable to create an OTA request.");
+
+  setOtaProgress(55, "Sending firmware to Firebase…");
+  await set(jobRef, {
+    status: "pending",
+    firmwareName: file.name,
+    version: version || "",
+    bytes: file.size,
+    sha256,
+    firmwareBase64,
+    requestedByUid: user.uid,
+    requestedByEmail: user.email || "administrator",
+    requestedAt: Date.now()
+  });
+
+  setOtaProgress(80, "Waiting for Orange Pi…");
+  return waitForOtaRelayJob(jobRef);
+}
+
+function uploadFirmwareDirect(file, version) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = await getOtaAuthToken();
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", OTA_API_URL);
+      xhr.responseType = "json";
+      xhr.timeout = OTA_RELAY_TIMEOUT_MS;
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      xhr.setRequestHeader("Content-Type", "application/octet-stream");
+      xhr.setRequestHeader("X-Firmware-Name", encodeURIComponent(file.name));
+      if (version) xhr.setRequestHeader("X-Firmware-Version", encodeURIComponent(version));
+
+      xhr.upload.onprogress = uploadEvent => {
+        if (!uploadEvent.lengthComputable) return;
+        const percent = Math.min(95, (uploadEvent.loaded / uploadEvent.total) * 95);
+        setOtaProgress(percent, "Uploading to Orange Pi…");
+      };
+
+      xhr.upload.onload = () => {
+        setOtaProgress(96, "Orange Pi is installing firmware on ESP32-S3…");
+      };
+
+      xhr.onload = () => {
+        const data = xhr.response || {};
+        if (xhr.status >= 200 && xhr.status < 300 && data.ok) {
+          resolve(data);
+        } else {
+          reject(new Error(data.message || `Installation failed (HTTP ${xhr.status}).`));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error("Network error while contacting the Orange Pi."));
+      xhr.ontimeout = () => reject(new Error("The update timed out. Check the ESP32-S3 before trying again."));
+      xhr.send(file);
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+window.uploadFirmware = async function(event) {
+  event?.preventDefault();
+
+  if (!canUpdateFirmware(getCurrentRole())) {
+    setOtaMessage("Administrator access is required.", "error");
+    return;
+  }
+  if (!selectedFirmwareFile) {
+    setOtaMessage("Choose a firmware .bin file first.", "error");
+    return;
+  }
+  if (!getOtaElements().confirm?.checked) {
+    setOtaMessage("Confirm that you understand the device will restart.", "error");
+    return;
+  }
+  if (!otaDeviceOnline) {
+    setOtaMessage("The ESP32-S3 must be online before installation can start.", "error");
+    return;
+  }
+
+  const file = selectedFirmwareFile;
+  const version = getOtaElements().version?.value.trim() || "";
+  const confirmed = window.confirm(`Install ${file.name} on the ESP32-S3 now? Do not switch off either device.`);
+  if (!confirmed) return;
+
+  try {
+    setOtaUploading(true);
+    setOtaMessage("");
+    setOtaProgress(0, OTA_USE_FIREBASE_RELAY ? "Preparing Firebase transfer…" : "Uploading to Orange Pi…");
+
+    const data = OTA_USE_FIREBASE_RELAY
+      ? await uploadFirmwareThroughFirebase(file, version)
+      : await uploadFirmwareDirect(file, version);
+
+    setOtaProgress(100, "Installation accepted. ESP32-S3 is restarting…");
+    setOtaMessage(`Firmware installed successfully${data.sha256 ? ` · SHA-256 ${data.sha256.slice(0, 12)}…` : ""}.`, "success");
+    setOtaDeviceState("restarting", "Restarting…");
+    setTimeout(refreshOtaStatus, 8000);
+  } catch (error) {
+    setOtaMessage(error.message || "Unable to start the firmware update.", "error");
+    refreshOtaStatus();
+  } finally {
+    setOtaUploading(false);
+  }
+};
+
+const otaDropZone = document.getElementById("otaDropZone");
+otaDropZone?.addEventListener("dragover", event => {
+  event.preventDefault();
+  if (!otaUploadInProgress) otaDropZone.classList.add("is-dragging");
+});
+otaDropZone?.addEventListener("dragleave", () => otaDropZone.classList.remove("is-dragging"));
+otaDropZone?.addEventListener("drop", event => {
+  event.preventDefault();
+  otaDropZone.classList.remove("is-dragging");
+  if (!otaUploadInProgress) window.selectFirmwareFile(event.dataTransfer?.files?.[0]);
+});
+document.getElementById("firmwareConfirm")?.addEventListener("change", updateOtaInstallButton);
+
 window.updateUserAccess = async function(uid) {
   if (!isAdministrator()) {
     alert("Only an Administrator account can manage user accounts.");
@@ -781,17 +1244,26 @@ window.logout = async function() {
 
   try {
     const user = auth.currentUser;
-    if (user) {
+    if (user && messaging) {
+      let token = localStorage.getItem(CURRENT_FCM_TOKEN_KEY);
       const currentSwReg = await navigator.serviceWorker.getRegistration('./');
-      if (currentSwReg) {
-        const token = await getToken(messaging, { serviceWorkerRegistration: currentSwReg });
-        if (token) {
-          // Padam token dari senarai multi-token peranti ini
-          await remove(ref(database, `users/${user.uid}/fcmTokens/${token}`));
-          // Padam juga format token tunggal lama jika ada
-          await update(ref(database, `users/${user.uid}`), { fcmToken: null });
-        }
+
+      if (!token && currentSwReg) {
+        token = await getToken(messaging, {
+          vapidKey: "BEzQHNigs0JY_MWDDUcx93Oee8R3tYp2b3yVqAHpAwvKpM6DlY23PHXWy0c-qgVRJq5qjRLfBTHbmUc_ft3Ktrw",
+          serviceWorkerRegistration: currentSwReg
+        });
       }
+
+      if (token) {
+        // Remove only this phone's token. Other phones using the same account remain registered.
+        await remove(ref(database, `users/${user.uid}/fcmTokens/${token}`));
+      }
+
+      await deleteToken(messaging).catch(error => {
+        console.warn("Unable to delete the local FCM token during logout.", error);
+      });
+      localStorage.removeItem(CURRENT_FCM_TOKEN_KEY);
     }
 
     await signOut(auth);
@@ -827,71 +1299,49 @@ window.deleteAllHistory = async function() {
 function resetSettingsMenuPosition() {
   const menu = document.getElementById("settingsMenu");
   const wrap = document.getElementById("settingsWrap");
-  const topActions = document.querySelector(".top-actions");
   if (!menu) return;
 
-  menu.classList.remove("viewport-positioned");
-  wrap?.classList.remove("settings-overlay-active");
-  topActions?.classList.remove("settings-overlay-active");
+  menu.classList.remove("viewport-positioned", "settings-menu-portal");
+  document.body.classList.remove("settings-menu-open");
+  document.getElementById("settingsMenuBackdrop")?.classList.remove("show");
   menu.style.removeProperty("--settings-menu-left");
   menu.style.removeProperty("--settings-menu-top");
+
+  if (wrap && menu.parentElement !== wrap) wrap.appendChild(menu);
 }
 
 function updateSettingsMenuPosition() {
   const menu = document.getElementById("settingsMenu");
   const button = document.getElementById("settingsButton");
-  const header = document.querySelector(".header");
-  const title = header?.querySelector("h1");
-  const statusGroup = document.querySelector(".live-update-group");
+  if (!menu || !button) return;
 
-  if (!menu || !button || !header) return;
+  if (menu.parentElement !== document.body) document.body.appendChild(menu);
+  menu.classList.add("viewport-positioned", "settings-menu-portal");
+  document.body.classList.add("settings-menu-open");
+  document.getElementById("settingsMenuBackdrop")?.classList.add("show");
 
-  if (!window.matchMedia("(max-width: 1180px)").matches) {
-    resetSettingsMenuPosition();
-    return;
-  }
-
-  menu.classList.add("viewport-positioned");
-  document.getElementById("settingsWrap")?.classList.add("settings-overlay-active");
-  document.querySelector(".top-actions")?.classList.add("settings-overlay-active");
-
-  const headerRect = header.getBoundingClientRect();
-  const titleRect = title?.getBoundingClientRect() || headerRect;
-  const settingsRect = document.getElementById("settingsButton")?.getBoundingClientRect() || headerRect;
-  const statusRect = statusGroup?.getBoundingClientRect();
+  const settingsRect = button.getBoundingClientRect();
   const menuWidth = menu.offsetWidth;
   const menuHeight = menu.offsetHeight;
-  const viewportWidth = window.visualViewport?.width || window.innerWidth;
-  const viewportHeight = window.visualViewport?.height || window.innerHeight;
-  const edgeGap = 10;
+  const visualViewport = window.visualViewport;
+  const viewportLeft = visualViewport?.offsetLeft || 0;
+  const viewportTop = visualViewport?.offsetTop || 0;
+  const viewportWidth = visualViewport?.width || window.innerWidth;
+  const viewportHeight = visualViewport?.height || window.innerHeight;
+  const edgeGap = 12;
 
-  const desiredLeft = settingsRect.right - menuWidth;
-  const minimumLeft = Math.max(edgeGap, headerRect.left + edgeGap);
-  const maximumLeft = Math.min(
-    viewportWidth - menuWidth - edgeGap,
-    headerRect.right - menuWidth - edgeGap
+  const left = Math.max(
+    viewportLeft + edgeGap,
+    Math.min(settingsRect.right - menuWidth, viewportLeft + viewportWidth - menuWidth - edgeGap)
   );
-  const left = Math.max(minimumLeft, Math.min(desiredLeft, maximumLeft));
+  const belowTop = settingsRect.bottom + 8;
+  const aboveTop = settingsRect.top - menuHeight - 8;
+  const top = belowTop + menuHeight <= viewportTop + viewportHeight - edgeGap
+    ? belowTop
+    : Math.max(viewportTop + edgeGap, aboveTop);
 
-  const overlapsStatusHorizontally = statusRect &&
-    left < statusRect.right &&
-    left + menuWidth > statusRect.left;
-  const desiredTop = settingsRect.bottom + 8;
-  const minimumTop = Math.max(edgeGap, headerRect.top + edgeGap);
-  const maximumTopFromStatus = overlapsStatusHorizontally
-    ? statusRect.top - menuHeight - 8
-    : headerRect.bottom - menuHeight - edgeGap;
-  const maximumTop = Math.min(
-    viewportHeight - menuHeight - edgeGap,
-    maximumTopFromStatus
-  );
-  const top = Math.max(minimumTop, Math.min(desiredTop, maximumTop));
-
-  menu.style.setProperty("--settings-menu-left", `${Math.round(left - headerRect.left)}px`);
-  menu.style.setProperty(
-    "--settings-menu-top",
-    `${Math.max(0, Math.floor(top - headerRect.top - 1))}px`
-  );
+  menu.style.setProperty("--settings-menu-left", `${Math.round(left)}px`);
+  menu.style.setProperty("--settings-menu-top", `${Math.round(top)}px`);
 }
 
 function closeSettingsMenu() {
@@ -941,8 +1391,11 @@ window.visualViewport?.addEventListener("resize", scheduleSettingsMenuPositionUp
 
 document.addEventListener("click", function(event) {
   const wrap = document.getElementById("settingsWrap");
-  if (wrap && !wrap.contains(event.target)) closeSettingsMenu();
+  const menu = document.getElementById("settingsMenu");
+  if (wrap && !wrap.contains(event.target) && !menu?.contains(event.target)) closeSettingsMenu();
 });
+
+document.getElementById("settingsMenuBackdrop")?.addEventListener("click", closeSettingsMenu);
 
 window.addEventListener("keydown", function(event) {
   if (event.key === "Escape") closeSettingsMenu();
@@ -960,7 +1413,10 @@ window.addEventListener("keydown", function(event) {
 });
 
 window.addEventListener("keydown", function(event) {
-  if (event.key === "Escape") closeUserManagement();
+  if (event.key === "Escape") {
+    closeUserManagement();
+    window.closeFirmwareUpdate();
+  }
 });
 
 function cssVar(name) {
@@ -1079,13 +1535,17 @@ function updateModeUI(mode) {
     modeBadge.classList.add("manual");
     manualBtn.classList.add("active-manual");
     modeNote.innerHTML = "";
-    controlNote.innerHTML = "Display follows live data. Commands are written to Firebase control.";
+    if (controlNote) {
+      controlNote.innerHTML = "Display follows live data. Commands are written to Firebase control.";
+    }
     manualButtons.forEach(button => button.disabled = false);
   } else {
     modeBadge.classList.add("auto");
     autoBtn.classList.add("active-auto");
     modeNote.innerHTML = "";
-    controlNote.innerHTML = "Manual controls are locked until mode becomes MANUAL.";
+    if (controlNote) {
+      controlNote.innerHTML = "Manual controls are locked until mode becomes MANUAL.";
+    }
     manualButtons.forEach(button => button.disabled = true);
   }
 
@@ -1492,8 +1952,10 @@ window.setMode = function(mode) {
     set(pump2Ref, "OFF");
   }
 
-  document.getElementById("controlNote").innerHTML =
-    "Mode command sent to control. Waiting system to update...";
+  const controlNote = document.getElementById("controlNote");
+  if (controlNote) {
+    controlNote.innerHTML = "Mode command sent to control. Waiting system to update...";
+  }
 };
 
 window.setPump1 = function(status) {
@@ -1501,8 +1963,10 @@ window.setPump1 = function(status) {
 
   if (currentMode === "MANUAL") {
     set(pump1Ref, status);
-    document.getElementById("controlNote").innerHTML =
-      "Borewell pump command sent to control. Waiting system to update...";
+    const controlNote = document.getElementById("controlNote");
+    if (controlNote) {
+      controlNote.innerHTML = "Borewell pump command sent to control. Waiting system to update...";
+    }
   } else {
     alert("Pump control hanya boleh digunakan bila sistem mode = MANUAL.");
   }
@@ -1513,8 +1977,10 @@ window.setPump2 = function(status) {
 
   if (currentMode === "MANUAL") {
     set(pump2Ref, status);
-    document.getElementById("controlNote").innerHTML =
-      "Spare tank pump command sent to control. Waiting system to update...";
+    const controlNote = document.getElementById("controlNote");
+    if (controlNote) {
+      controlNote.innerHTML = "Spare tank pump command sent to control. Waiting system to update...";
+    }
   } else {
     alert("Pump control hanya boleh digunakan bila sistem mode = MANUAL.");
   }
