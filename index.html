@@ -1,52 +1,522 @@
-<!doctype html>
-<html lang="ms">
+<!DOCTYPE html>
+<html data-theme="night">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#f9f7f0">
-  <meta name="description" content="Mari belajar, bermain dan berkarya! Terokai portfolio, video dan aktiviti interaktif di Digital Learning Hub.">
-  <title>Digital Learning Hub · Taman Belajar</title>
-  <link rel="icon" href="bunny.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css?v=20261118-heading-unified"><link rel="stylesheet" href="music.css">
+  <title>ESP32-S3 Smart Irrigation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#020617">
+
+  <!-- Ikon Web & iOS -->
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="apple-touch-icon" href="icon.png">
+  <!-- Web App Manifest (Nama: Smart Herbs) -->
+  <link rel="manifest" href="manifest.json">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-<a class="skip" href="#kandungan">Terus ke kandungan</a>
-<svg class="svg-defs" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
-<symbol id="bunny" viewBox="0 0 200 240"><g stroke="#493d61" stroke-width="3.5" stroke-linejoin="round"><ellipse cx="76" cy="62" rx="20" ry="48" fill="#fffaf1" transform="rotate(-14 76 62)"/><ellipse cx="126" cy="60" rx="19" ry="49" fill="#fffaf1" transform="rotate(12 126 60)"/><path d="M72 35l7 48M130 32l-9 49" stroke="#f5b6c9" stroke-width="12" stroke-linecap="round"/><ellipse cx="101" cy="183" rx="55" ry="50" fill="#b7a1e6"/><ellipse cx="56" cy="215" rx="26" ry="15" fill="#fffaf1"/><ellipse cx="142" cy="215" rx="26" ry="15" fill="#fffaf1"/><path d="M59 164Q16 145 31 124Q43 116 66 145M147 155q45-43 46-14q-4 21-40 38" fill="#fffaf1"/><ellipse cx="102" cy="115" rx="68" ry="56" fill="#fffaf1"/><ellipse cx="67" cy="130" rx="13" ry="8" fill="#f7c1c9" stroke="none"/><ellipse cx="139" cy="130" rx="13" ry="8" fill="#f7c1c9" stroke="none"/><path d="M81 111v7m43-7v7" stroke-width="5" stroke-linecap="round"/><path d="M96 127q6-6 12 0l-6 6z" fill="#a96f83" stroke="none"/><path d="M90 135q12 15 24 0" fill="none" stroke-linecap="round"/><path d="M91 174l10 10 12-10" fill="none" stroke="white"/></g></symbol>
-<symbol id="bear" viewBox="0 0 200 240"><g stroke="#574432" stroke-width="3.5"><circle cx="50" cy="65" r="25" fill="#d69d62"/><circle cx="148" cy="65" r="25" fill="#d69d62"/><circle cx="50" cy="65" r="13" fill="#efbc8c" stroke="none"/><circle cx="148" cy="65" r="13" fill="#efbc8c" stroke="none"/><ellipse cx="101" cy="183" rx="56" ry="48" fill="#98b6a0"/><ellipse cx="57" cy="216" rx="27" ry="16" fill="#dda66c"/><ellipse cx="142" cy="216" rx="27" ry="16" fill="#dda66c"/><ellipse cx="99" cy="110" rx="69" ry="60" fill="#dda66c"/><ellipse cx="99" cy="132" rx="29" ry="20" fill="#fce3b6" stroke="none"/><path d="M73 109v5m51-5v5" stroke-width="5" stroke-linecap="round"/><ellipse cx="99" cy="126" rx="8" ry="6" fill="#574432" stroke="none"/><path d="M88 138q11 10 22 0" fill="none" stroke-linecap="round"/><ellipse cx="57" cy="128" rx="12" ry="7" fill="#e7907b" stroke="none"/><ellipse cx="140" cy="128" rx="12" ry="7" fill="#e7907b" stroke="none"/><path d="M56 169q-36-22-30 7q5 17 33 19m89-26q30-22 29 4q-1 16-29 21" fill="#dda66c"/><path d="M80 178h42v25H80z" fill="#ffdb78"/></g></symbol>
-<symbol id="cat" viewBox="0 0 200 240"><g stroke="#72504c" stroke-width="3.5" stroke-linejoin="round"><path d="M149 191q62-32 29-48" fill="none" stroke="#e9a085" stroke-width="17" stroke-linecap="round"/><ellipse cx="101" cy="184" rx="53" ry="48" fill="#efb15f"/><ellipse cx="63" cy="216" rx="26" ry="14" fill="#f5c7a5"/><ellipse cx="139" cy="216" rx="26" ry="14" fill="#f5c7a5"/><path d="M35 107L39 33l48 30q16-4 29 0l45-30 5 74q11 61-65 63-77-2-66-63z" fill="#f5c7a5"/><path d="M49 49l6 38 23-17m73-21-7 38-21-17" fill="#e9a085" stroke="none"/><path d="M74 112v6m53-6v6" stroke-linecap="round" stroke-width="5"/><path d="M95 128h12l-6 7z" fill="#b97076" stroke="none"/><path d="M88 138q13 12 25 0M46 128l-22-4m24 17-23 5m131-18 21-4m-23 17 22 5" fill="none" stroke-linecap="round"/><ellipse cx="65" cy="132" rx="10" ry="6" fill="#e9a085" stroke="none"/><ellipse cx="138" cy="132" rx="10" ry="6" fill="#e9a085" stroke="none"/><path d="M65 178l35 12 34-12v32l-34 11-35-11z" fill="#fff5de"/><path d="M100 190v31" fill="none"/></g></symbol>
-<symbol id="star" viewBox="0 0 50 50"><path d="m25 3 7 14 16 3-12 12 2 16-13-8-14 8 3-16L2 20l16-3z" fill="#f3cd70" stroke="#d3a957" stroke-width="2"/><path d="M20 24v2m10-2v2m-10 6q5 5 10 0" fill="none" stroke="#6b583d" stroke-width="2" stroke-linecap="round"/></symbol>
-<symbol id="owl" viewBox="0 0 200 240"><g stroke="#71614b" stroke-width="3.2" stroke-linejoin="round"><path d="m44 69-8-39 43 20q24-6 46 0l39-20-6 40q35 38 12 98-21 49-72 46-58 1-76-47-20-54 22-98z" fill="#cbb594"/><path d="M53 120q46-27 93 0l10 50q-11 34-56 34-47 0-58-34z" fill="#f5ecd8" stroke="none"/><path d="M39 128q-25 26-9 58 20-9 31-36m95-23q25 26 12 59-21-9-33-37" fill="#b8a180"/><circle cx="70" cy="93" r="32" fill="#fbf7ec"/><circle cx="132" cy="93" r="32" fill="#fbf7ec"/><circle cx="73" cy="94" r="10" fill="#71614b" stroke="none"/><circle cx="129" cy="94" r="10" fill="#71614b" stroke="none"/><circle cx="76" cy="91" r="3" fill="white" stroke="none"/><circle cx="132" cy="91" r="3" fill="white" stroke="none"/><path d="m92 113 10 15 10-15z" fill="#d4a15c"/><path d="m71 219 6-12 7 12m32 0 7-12 7 12" fill="none" stroke-linecap="round"/><path d="m71 157 30 8 30-8v33l-30 8-30-8z" fill="#8da6ae"/><path d="M101 165v33"/></g></symbol><symbol id="dino" viewBox="0 0 200 240"><g stroke="#506952" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round"><path d="m82 38-7-21 23 10m20 11 6-19 17 22m12 16 18-9-1 24m-14 47 19 3-10 19m-25 8 17 15-21 6m-8 20 10 16-21 2" fill="#e2be7e"/><path d="M77 113q-24 27-26 55-31 8-33-13-11 29 29 42 6 27 49 27 63 1 52-57l-12-52q46-3 41-43-2-40-56-40-58-1-58 39 0 28 14 42z" fill="#a6b99a"/><path d="M87 121q50 3 45 64-4 28-41 23-26-6-19-40z" fill="#e9e7c4" stroke="none"/><path d="M106 70v7m43-7v7" stroke-width="5"/><path d="M130 94q12 8 25-2" fill="none"/><ellipse cx="94" cy="92" rx="11" ry="6" fill="#d3ad8b" stroke="none"/><path d="m73 147-21 12m79-16 18 13" stroke-width="12"/><path d="M63 210v17h35v-13m23-1 2 14h31q3-14-10-20" fill="#a6b99a"/><path d="M87 161h34v25H87z" fill="#f7f2dc"/><path d="M95 169h18m-18 8h13" stroke="#b5b08c" stroke-width="2"/></g></symbol>
-<symbol id="scene-read" viewBox="0 0 320 280"><ellipse cx="162" cy="250" rx="127" ry="12" fill="#e4e8d9"/><circle cx="162" cy="130" r="103" fill="#f0ebf6"/><use href="#bunny" x="68" y="18" width="185" height="222"/><path d="M76 188q42-16 85 2 40-18 84-2v52q-43-13-84 2-43-16-85-2z" fill="#fff9e9" stroke="#9c86ad" stroke-width="3"/><path d="M161 190v52m-68-38 48 3m-48 11 48 3m38-14 48-3m-48 17 48-3" stroke="#c6b7cf" stroke-width="3" stroke-linecap="round"/></symbol>
-<symbol id="scene-tech" viewBox="0 0 320 280"><rect x="38" y="42" width="245" height="195" rx="85" fill="#e8efdf"/><use href="#bear" x="61" y="5" width="190" height="228"/><path d="M42 219h240v13H42z" fill="#c3d0b3"/><path d="M65 233v20m194-20v20" stroke="#9faf8e" stroke-width="8" stroke-linecap="round"/><rect x="95" y="144" width="135" height="75" rx="9" fill="#c0b1d6" stroke="#7e6a94" stroke-width="3"/><path d="M84 220h158" stroke="#7e6a94" stroke-width="7" stroke-linecap="round"/><circle cx="162" cy="179" r="11" fill="#f7f1fb"/><path d="m157 179 4 4 7-8" fill="none" stroke="#9c87b0" stroke-width="2.5"/><rect x="246" y="183" width="20" height="34" rx="4" fill="#f5f0dd" stroke="#a9b99a" stroke-width="2"/><path d="M256 183v-26m0 12q-16-12-12-21 17 3 12 21m0-7q18-13 17 1-7 10-17 9" fill="#becfaa" stroke="#a2b88b" stroke-width="2"/></symbol>
-<symbol id="scene-art" viewBox="0 0 320 280"><rect x="21" y="32" width="278" height="209" rx="83" fill="#eee8f5"/><use href="#cat" x="0" y="34" width="180" height="216"/><path d="m184 109-24 143m79-143 35 143m-109-30h102" stroke="#b5a38e" stroke-width="7" stroke-linecap="round"/><rect x="156" y="73" width="121" height="133" rx="7" fill="#fffaf0" stroke="#b5a38e" stroke-width="3"/><circle cx="190" cy="108" r="14" fill="#d1bdde"/><path d="m166 190 34-49 23 31 15-16 29 34z" fill="#b5c8a2"/><path d="M120 153l38-20" stroke="#8e779f" stroke-width="7" stroke-linecap="round"/><path d="m154 135 17-7" stroke="#a9bd98" stroke-width="9" stroke-linecap="round"/><ellipse cx="127" cy="192" rx="23" ry="17" fill="#f6edd7" stroke="#b5a38e" stroke-width="2"/><circle cx="117" cy="188" r="4" fill="#b6c8a5"/><circle cx="130" cy="183" r="4" fill="#bda9d0"/><circle cx="137" cy="195" r="4" fill="#d9bd8c"/></symbol>
-<symbol id="scene-video" viewBox="0 0 320 280"><rect x="18" y="37" width="284" height="207" rx="88" fill="#edf1e5"/><use href="#bunny" x="5" y="44" width="154" height="185"/><rect x="139" y="82" width="155" height="109" rx="12" fill="#fffaf2" stroke="#a18cb4" stroke-width="3"/><rect x="151" y="94" width="131" height="85" rx="7" fill="#e8dff0"/><path d="m200 112 38 24-38 24z" fill="#a68cbb"/><path d="M216 193v32m-30 4h60" stroke="#a18cb4" stroke-width="6" stroke-linecap="round"/><rect x="25" y="217" width="93" height="15" rx="5" fill="#c6d2b5"/></symbol>
-<symbol id="scene-library" viewBox="0 0 320 280"><rect x="25" y="36" width="268" height="207" rx="90" fill="#edf1e5"/><use href="#owl" x="73" y="20" width="176" height="211"/><rect x="48" y="229" width="225" height="14" rx="5" fill="#b7a3cd"/><rect x="69" y="213" width="193" height="15" rx="5" fill="#c6d4b2"/><path d="M81 217h165m-186 16h194" stroke="#f8f7e9" stroke-width="3"/><path d="m265 95 4 11 12 3-12 4-4 11-4-11-11-4 11-3z" fill="#d5c7e2"/></symbol>
-<symbol id="scene-quiz" viewBox="0 0 320 280"><circle cx="160" cy="142" r="105" fill="#e9eddf"/><use href="#dino" x="54" y="25" width="198" height="238"/><g transform="translate(224 39)"><rect width="61" height="65" rx="18" fill="#faf6ec" stroke="#c2acd5" stroke-width="2"/><path d="M20 23q0-12 12-12 18 0 10 16l-9 8v7m0 8v2" fill="none" stroke="#9c82b1" stroke-width="5" stroke-linecap="round"/></g></symbol>
-</defs></svg>
-<header class="site-header"><a class="brand" href="#pengenalan" aria-label="Digital Learning Hub, laman utama"><span class="logo-mark"><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-flower"/></svg></span><span>Digital Learning Hub<small>Ruang kecil, impian besar</small></span></a><span class="header-note"><span class="status-dot"></span> Belajar dengan gembira</span><button class="menu-toggle" aria-expanded="false" aria-controls="main-nav"><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-menu"/></svg> <span>Menu</span></button></header>
-<nav id="main-nav" aria-label="Menu utama"><div class="nav-inner">
-<a href="#pengenalan" data-page="pengenalan" class="active"><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-home"/></svg><span class="nav-label">Pengenalan</span></a><a href="#portfolio" data-page="portfolio"><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-book"/></svg><span class="nav-label">My Learning Portfolio</span></a><a href="#projek" data-page="projek"><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-folder"/></svg><span class="nav-label">Tugasan dan Projek</span></a><a href="#kuiz" data-page="kuiz"><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-flag"/></svg><span class="nav-label">Uji Kefahaman</span></a><a href="#galeri" data-page="galeri"><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-gallery"/></svg><span class="nav-label">Galeri Hasil Kerja</span></a><a href="#bahan" data-page="bahan"><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-folder"/></svg><span class="nav-label">Folder Bahan</span></a><a href="#penutup" data-page="penutup"><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-heart"/></svg><span class="nav-label">Penutup</span></a>
-</div></nav>
-<main id="kandungan" tabindex="-1">
-<section id="pengenalan" class="page active" aria-labelledby="welcome-title">
-<div class="hero"><div class="hero-copy"><div class="eyebrow"><span><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-sparkle"/></svg></span> Selamat datang ke taman belajar</div><h1 id="welcome-title">Dunia kecil,<br><span>ilmu yang besar.</span><svg class="heading-star" aria-hidden="true"><use href="#star"/></svg></h1><p>Mari meneroka, bermain dan berkarya bersama!<br>Setiap klik membawa kita ke pengembaraan ilmu yang baharu.</p><div class="hero-actions"><a class="button primary" href="#portfolio">Jom mula belajar <span><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></span></a><a class="text-link" href="#projek">Terokai aktiviti <span><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-right"/></svg></span></a></div><div class="hero-foot"><span class="tiny-faces" aria-hidden="true"><svg viewBox="0 0 200 240"><use href="#bunny"/></svg><svg viewBox="0 0 200 240"><use href="#bear"/></svg><svg viewBox="0 0 200 240"><use href="#cat"/></svg></span><span>Teman comel untuk perjalanan belajarmu</span></div></div>
-<div class="hero-art" role="img" aria-label="Arnab, beruang dan kucing membaca bersama di taman dengan buku gergasi, bas sekolah dan pelangi"><svg viewBox="0 0 680 490" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.2" fill="#c8bea7" opacity=".28"/></pattern></defs><path d="M86 405C-27 249 79 69 245 76c97-113 316-49 340 108 118 118-2 262-167 264z" fill="#e8eadc"/><path d="M86 405C-27 249 79 69 245 76c97-113 316-49 340 108 118 118-2 262-167 264z" fill="url(#dots)"/><path d="M357 166q80-154 161 0" fill="none" stroke="#eab89e" stroke-width="17"/><path d="M372 166q66-124 131 0" fill="none" stroke="#f2d789" stroke-width="13"/><path d="M385 166q53-96 105 0" fill="none" stroke="#b4c9b1" stroke-width="12"/><g fill="#fffcf4"><path d="M62 128q-8-23 13-28 7-26 29-15 27-9 30 18 28-1 26 25z"/><path d="M511 192q-10-19 11-28 9-31 36-18 23-5 23 21 26-3 25 25z"/></g><g transform="translate(527 53)"><circle cx="29" cy="29" r="22" fill="#f5d780"/><path d="M21 27v3m15-3v3m-15 7q7 7 15 0" stroke="#806538" stroke-width="2.5" fill="none" stroke-linecap="round"/><g stroke="#e8c671" stroke-width="3" stroke-linecap="round"><path d="M29-3v-8m0 80v-8M-3 29h-8m80 0h-8M6 6 0 0m52 52 6 6M6 52 0 58M52 6l6-6"/></g></g><path d="M54 417q254-82 556 0-263 62-556 0" fill="#d2dcc2"/><ellipse cx="341" cy="412" rx="202" ry="28" fill="#b8c7aa" opacity=".45"/>
-<g transform="rotate(-9 208 378)"><rect x="132" y="364" width="234" height="35" rx="8" fill="#b49bd7" stroke="#74628d" stroke-width="2.5"/><path d="M145 372h205v18H145" fill="#fff6e7"/><path d="M150 381h197" stroke="#d5c6b5"/><rect x="117" y="339" width="238" height="30" rx="7" fill="#f3c777" stroke="#ad8753" stroke-width="2.5"/><path d="M135 347h204v13H135" fill="#fff6e7"/></g>
-<use href="#bunny" x="132" y="121" width="210" height="250" transform="rotate(-8 237 246)"/><use href="#bear" x="326" y="172" width="181" height="215" transform="rotate(7 416 279)"/>
-<g transform="translate(285 293) rotate(5)"><path d="M0 0q40-17 76 3Q112-13 150 0v64q-37-12-74 2Q36 51 0 64z" fill="#fff6df" stroke="#675678" stroke-width="3"/><path d="M76 3v63" stroke="#675678" stroke-width="3"/><path d="m14 20 46 3m-46 10 46 3m-46 10 32 3m54-25 36-5m-36 18 36-5m-36 18 28-4" stroke="#d4bfa0" stroke-width="3" stroke-linecap="round"/></g>
-<g transform="translate(468 333) rotate(4)"><rect width="126" height="65" rx="15" fill="#eeb96f" stroke="#82664e" stroke-width="3"/><rect x="11" y="11" width="24" height="23" rx="5" fill="#fff6df"/><rect x="43" y="11" width="24" height="23" rx="5" fill="#fff6df"/><rect x="76" y="11" width="32" height="38" rx="5" fill="#bfd4cc" stroke="#82664e" stroke-width="2"/><path d="M9 44h56" stroke="#d7924e" stroke-width="4"/><circle cx="28" cy="64" r="13" fill="#68556d"/><circle cx="98" cy="64" r="13" fill="#68556d"/><circle cx="28" cy="64" r="5" fill="#fff5dd"/><circle cx="98" cy="64" r="5" fill="#fff5dd"/></g>
-<g transform="translate(67 301)"><path d="M17 101V51m0 18Q-9 49 1 36q28 2 16 33m0 10q31-25 33-6-5 15-33 6" stroke="#6e9271" stroke-width="4" fill="#abc19a"/><path d="M-2 103h41l-7 28H5z" fill="#d4a188"/><circle cx="17" cy="31" r="20" fill="#ddc6e6"/><circle cx="17" cy="31" r="9" fill="#f3d37f"/></g><use href="#star" x="94" y="194" width="37" height="37" transform="rotate(-14 112 212)"/><use href="#star" x="593" y="273" width="31" height="31"/><path d="m311 74 5 10 11 2-8 8 2 11-10-5-10 5 2-11-8-8 11-2z" fill="#b7a1d9"/><g stroke="#9682b5" stroke-width="3" stroke-linecap="round"><path d="m288 129 7 5m-5-22 7 9m-21 6 8 4"/></g><g transform="translate(394 44) rotate(9)"><rect width="107" height="38" rx="19" fill="white"/><text x="53" y="25" text-anchor="middle" fill="#645577" font-size="14" font-family="Arial" font-weight="bold">Jom belajar!</text></g></svg></div></div>
-<div class="welcome-strip"><span class="strip-icon"><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-flower"/></svg></span><p><strong>Ilmu bertambah, kreativiti bercambah.</strong><span>Satu ruang untuk nota, hasil karya dan pengembaraan pembelajaran.</span></p><span class="strip-sparkle" aria-hidden="true"><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-sparkle"/></svg></span></div>
-<section class="document-text"><div class="document-title"><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-book"/></svg><h2>Pengenalan</h2></div><div id="intro-full" class="prose"></div></section>
-</section>
-<section id="portfolio" class="page" hidden><div class="page-heading"><div class="page-heading-copy"><span class="eyebrow">Koleksi pembelajaran saya</span><h1>My Learning Portfolio <span><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-flower"/></svg></span></h1><p>Setiap hasil kerja, satu langkah ke hadapan. Pilih kursus untuk meneroka koleksi.</p></div><div class="section-art" aria-hidden="true"><svg viewBox="0 0 320 280"><use href="#scene-tech"/></svg></div></div><div id="portfolio-full" class="prose document-text"></div><div class="course-filters" role="group" aria-label="Tapis kursus"><button class="chip selected" data-filter="all" aria-pressed="true">Semua kursus</button><button class="chip" data-filter="tekno" aria-pressed="false">EDUP6023</button><button class="chip" data-filter="sejarah" aria-pressed="false">EDUP6013</button><button class="chip" data-filter="english" aria-pressed="false">MPU6122</button></div><div id="portfolio-courses" class="portfolio-grid"></div></section>
-<section id="projek" class="page" hidden><div class="page-heading"><div class="page-heading-copy"><span class="eyebrow">Idea kecil jadi karya</span><h1>Tugasan & Projek <span><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-sparkle"/></svg></span></h1><p>Tonton video animasi dan terokai ruang pembelajaran interaktif.</p></div><div class="section-art" aria-hidden="true"><svg viewBox="0 0 320 280"><use href="#scene-video"/></svg></div></div><div id="project-list" class="resource-grid"></div></section>
-<section id="kuiz" class="page" hidden><div class="quiz-hero"><svg viewBox="0 0 320 280" aria-hidden="true"><use href="#scene-quiz"/></svg><span class="eyebrow">Sedia, fikir, cuba!</span><h1>Jom uji kefahaman!</h1><p>Tak mengapa kalau tersilap. Setiap cubaan membantu kita belajar.</p><a class="button primary" href="https://taro-s-3d-adventure-misi-pulang-ke-kampung-1.ai.studio" target="_blank" rel="noopener noreferrer">Main kuiz Misi Pulang ke Kampung <svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a><span class="external-note">Kuiz dibuka dalam tab baharu.</span></div></section>
-<section id="galeri" class="page" hidden><div class="page-heading"><div class="page-heading-copy"><span class="eyebrow">Ruang kreativiti kita</span><h1>Galeri hasil kerja</h1><p>Berkarya bersama, berkongsi inspirasi.</p></div></div><div class="gallery-feature"><div class="friends-art"><svg aria-hidden="true" viewBox="0 0 320 280"><use href="#scene-art"/></svg><span>Berkongsi idea, mencipta bersama</span></div><div><span class="eyebrow">Projek kolaboratif</span><h2>Legendara<br>Dunia Cerita Rakyat</h2><p>Terokai dunia cerita rakyat melalui hasil kerja bersama rakan.</p><div class="collaborators"><span><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-friends"/></svg></span><p>Nuraleeya Afiqa binti Rahisham<br>Nuur Naurah Rajwaa binti Mohamad Rahim</p></div><a class="button primary" href="https://legendara-dunia-cerita-rakyat.ai.studio" target="_blank" rel="noopener noreferrer">Terokai Legendara <svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a></div></div></section>
-<section id="bahan" class="page" hidden><div class="page-heading"><div class="page-heading-copy"><span class="eyebrow">Bekalan untuk belajar</span><h1>Rak bahan pembelajaran <span><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-folder"/></svg></span></h1><p>Video, tutorial dan audio — semuanya disusun untuk mudah dicari.</p></div><div class="section-art" aria-hidden="true"><svg viewBox="0 0 320 280"><use href="#scene-library"/></svg></div></div><label class="search-field"><span aria-hidden="true"><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-search"/></svg></span><input id="search" type="search" placeholder="Cari video, tutorial, podcast…" aria-label="Cari bahan pembelajaran"><span class="search-hint">Jom cari ilmu</span></label><div class="resource-tabs" role="group" aria-label="Kategori bahan"><button class="chip selected" data-resource="all" aria-pressed="true">Semua bahan</button><button class="chip" data-resource="tekno" aria-pressed="false">Folder Teknologi</button><button class="chip" data-resource="kppb" aria-pressed="false">KPPB · Sejarah & English</button></div><div id="resource-list" class="folder-collection"></div><p id="no-results" class="empty-message" hidden>Belum jumpa bahan itu. Cuba kata kunci lain ya! <svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-leaf"/></svg></p></section>
-<section id="penutup" class="page" hidden><div class="closing"><div class="closing-friends"><svg aria-hidden="true" viewBox="0 0 400 240"><use href="#bunny" x="0" width="180" height="240"/><use href="#bear" x="115" width="180" height="240"/><use href="#cat" x="230" width="170" height="240"/></svg></div><span class="eyebrow">Pengembaraan ilmu tak pernah berakhir</span><h1>Terima kasih,<br>teman belajar! <span><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-heart"/></svg></span></h1><blockquote>“Teknologi Memacu Inovasi,<br>Ilmu Membentuk Generasi.”</blockquote><p>Semoga setiap ilmu menjadi bekalan untuk terus berkarya dan memberi inspirasi.</p><a class="button primary" href="#pengenalan">Kembali ke taman belajar <svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-external"/></svg></a></div><section class="document-text"><div class="document-title"><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-book"/></svg><h2>Penutup</h2></div><div id="closing-full" class="prose"></div></section></section>
-<nav class="flow-nav" aria-label="Urutan pembelajaran"><a id="flow-previous" href="#pengenalan"></a><span id="flow-progress" aria-hidden="true"></span><a id="flow-next" href="#portfolio"></a></nav></main>
-<footer><a class="footer-brand" href="#pengenalan"><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-flower"/></svg> Digital Learning Hub</a><p>Belajar dengan hati. Berkarya dengan imaginasi.</p><span>EDUP6023 · EDUP6013 · MPU6122</span><div class="footer-bottom"><small>Taman kecil untuk idea yang besar.</small><a href="#pengenalan">Kembali ke mula <svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-up"/></svg></a></div></footer>
-<dialog id="resource-dialog"><button class="dialog-close" aria-label="Tutup"><svg class="ui-icon " viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-close"/></svg></button><span class="dialog-icon" id="dialog-icon"></span><span class="eyebrow" id="dialog-label"></span><h2 id="dialog-title"></h2><div id="dialog-body" class="prose"></div><div id="dialog-actions"></div></dialog>
-<script src="icons.js"></script><script src="content.js"></script><script src="app.js"></script><script src="music.js"></script>
-</body></html>
+  <div class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="brand-icon" aria-hidden="true">🌱</div>
+        <div class="login-copy">
+          <h2>Smart Irrigation</h2>
+          <p>Secure access for realtime monitoring and pump control.</p>
+        </div>
+      </div>
+
+      <div class="auth-tabs" role="tablist" aria-label="Account access">
+        <button class="auth-tab active" id="loginTab" type="button" role="tab" aria-selected="true" onclick="showAuthView('login')">LOGIN</button>
+        <button class="auth-tab" id="registerTab" type="button" role="tab" aria-selected="false" onclick="showAuthView('register')">REGISTER</button>
+      </div>
+
+      <div class="auth-form" id="loginForm">
+        <label class="login-field-label" for="loginEmail">Email address</label>
+        <input
+          type="email"
+          id="loginEmail"
+          class="login-input"
+          placeholder="name@example.com"
+          autocomplete="email"
+          inputmode="email"
+        >
+
+        <label class="login-field-label" for="loginPassword">Password</label>
+        <input
+          type="password"
+          id="loginPassword"
+          class="login-input"
+          placeholder="Enter your password"
+          autocomplete="current-password"
+        >
+
+        <button class="login-btn" id="loginButton" onclick="login()">LOGIN TO APP</button>
+        <button class="forgot-password-btn" type="button" onclick="forgotPassword()">Forgot password?</button>
+      </div>
+
+      <div class="auth-form" id="registerForm" hidden>
+        <label class="login-field-label" for="registerName">Full name</label>
+        <input
+          type="text"
+          id="registerName"
+          class="login-input"
+          placeholder="Enter your full name"
+          autocomplete="name"
+        >
+
+        <label class="login-field-label" for="registerEmail">Email address</label>
+        <input
+          type="email"
+          id="registerEmail"
+          class="login-input"
+          placeholder="name@example.com"
+          autocomplete="email"
+          inputmode="email"
+        >
+
+        <label class="login-field-label" for="registerPassword">Password</label>
+        <input
+          type="password"
+          id="registerPassword"
+          class="login-input"
+          placeholder="Minimum 6 characters"
+          autocomplete="new-password"
+        >
+
+        <label class="login-field-label" for="registerConfirmPassword">Confirm password</label>
+        <input
+          type="password"
+          id="registerConfirmPassword"
+          class="login-input"
+          placeholder="Re-enter your password"
+          autocomplete="new-password"
+        >
+
+        <button class="login-btn register-submit-btn" id="registerButton" onclick="registerUser()">CREATE ACCOUNT</button>
+        <p class="register-note">New accounts must be approved by an administrator before login access is enabled.</p>
+      </div>
+
+      <div class="login-error" id="loginError" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <div class="app">
+
+    <div class="main-area">
+      <div class="header">
+        <div>
+          <div class="eyebrow">● IoT Smart Irrigation App</div>
+          <h1>Smart Irrigation Monitoring System For Leafy Herbs</h1>
+          <p>Realtime sensor monitoring, mode switching, pump control, and history data in one clean professional app.</p>
+        </div>
+
+        <div class="top-actions">
+          <div class="live-update-group" aria-label="Realtime connection status">
+            <div class="status-pill live-pill" id="status">Connecting...</div>
+            <div class="status-pill update-pill" id="lastUpdate">Update: --</div>
+          </div>
+
+          <button class="theme-toggle" onclick="toggleTheme()" id="themeButton">
+            🌙 <span id="themeLabel">NIGHT</span>
+          </button>
+
+          <div class="settings-wrap" id="settingsWrap">
+            <button
+              class="settings-btn"
+              id="settingsButton"
+              onclick="toggleSettingsMenu(event)"
+              aria-label="Open settings menu"
+              aria-expanded="false"
+            >⚙️</button>
+
+            <div class="settings-menu" id="settingsMenu">
+              <div class="settings-menu-title">Settings</div>
+              <button class="settings-menu-btn manage-users-btn" id="manageUsersButton" onclick="openUserManagement()">👥 MANAGE USERS</button>
+              <button class="settings-menu-btn firmware-update-btn" id="firmwareUpdateButton" onclick="openFirmwareUpdate()">⬆ UPDATE</button>
+              <button class="settings-menu-btn delete-history-btn" onclick="deleteAllHistory()">🗑 DELETE ALL HISTORY</button>
+              <button class="settings-menu-btn logout-btn" onclick="logout()">↪ LOG OUT</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="main-card">
+        <div class="mode-panel">
+          <div class="mode-top">
+            <div>
+              <div class="mode-title">System Mode</div>
+              <p class="manual-note" id="modeNote"></p>
+            </div>
+
+            <div class="mode-badge auto" id="modeBadge">AUTO</div>
+          </div>
+
+          <div class="mode-buttons">
+            <button class="mode-btn" id="autoBtn" onclick="setMode('AUTO')">AUTO MODE</button>
+            <button class="mode-btn" id="manualBtn" onclick="setMode('MANUAL')">MANUAL MODE</button>
+          </div>
+        </div>
+
+        <div class="section-row">
+          <div>
+            <div class="section-title">Sensor Data</div>
+            <div class="section-subtitle">Temperature, humidity, soil, rain and water level readings.</div>
+          </div>
+        </div>
+
+        <div class="grid sensor-data-grid">
+          <div class="sensor-card" onclick="openGraph('temperature')">
+            <div class="sensor-top">
+              <div class="icon">🌡️</div>
+              <div class="chip">LIVE</div>
+            </div>
+            <div>
+              <div class="label">Temperature</div>
+              <div class="value"><span id="temp">--</span>°C</div>
+            </div>
+          </div>
+
+          <div class="sensor-card" onclick="openGraph('humidity')">
+            <div class="sensor-top">
+              <div class="icon">💧</div>
+              <div class="chip">LIVE</div>
+            </div>
+            <div>
+              <div class="label">Humidity</div>
+              <div class="value"><span id="hum">--</span>%</div>
+            </div>
+          </div>
+
+          <div class="sensor-card" onclick="openGraph('moisturePercent')">
+            <div class="sensor-top">
+              <div class="icon">🌱</div>
+              <div class="chip">LIVE</div>
+            </div>
+            <div>
+              <div class="label">Soil Moisture</div>
+              <div class="value"><span id="moisture">--</span>%</div>
+            </div>
+          </div>
+
+          <div class="sensor-card" onclick="openGraph('rainState')">
+            <div class="sensor-top">
+              <div class="icon">🌧️</div>
+              <div class="chip">LIVE</div>
+            </div>
+            <div>
+              <div class="label">Rain Sensor</div>
+              <div class="small-value" id="rain">--</div>
+            </div>
+          </div>
+
+          <div class="sensor-card" onclick="openGraph('borewellLevel')">
+            <div class="sensor-top">
+              <div class="icon">🕳️</div>
+              <div class="chip">LIVE</div>
+            </div>
+            <div class="water-level-wrap">
+              <div class="level-text-block">
+                <div class="label">Borewell Water Level</div>
+                <div class="small-value" id="borewell">--</div>
+              </div>
+              <div>
+                <div class="tank-sim" aria-label="Borewell tank simulation">
+                  <div class="tank-fill error" id="borewellTankFill"></div>
+                </div>
+                <div class="tank-level-note" id="borewellTankNote">--</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sensor-card" onclick="openGraph('spareTankLevel')">
+            <div class="sensor-top">
+              <div class="icon">🚰</div>
+              <div class="chip">LIVE</div>
+            </div>
+            <div class="water-level-wrap">
+              <div class="level-text-block">
+                <div class="label">Spare Tank Water Level</div>
+                <div class="small-value" id="spareTank">--</div>
+              </div>
+              <div>
+                <div class="tank-sim" aria-label="Spare tank simulation">
+                  <div class="tank-fill error" id="spareTankFill"></div>
+                </div>
+                <div class="tank-level-note" id="spareTankNote">--</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-row power-section-row">
+          <div>
+            <div class="section-title">Power Monitoring</div>
+            <div class="section-subtitle">Battery voltage, charging current, solar power and solar charging status.</div>
+          </div>
+        </div>
+
+        <div class="grid power-data-grid">
+          <div class="sensor-card power-card" onclick="openGraph('batteryVoltage')">
+            <div class="sensor-top">
+              <div class="icon">🔋</div>
+              <div class="chip">LIVE</div>
+            </div>
+            <div>
+              <div class="label">Battery Voltage</div>
+              <div class="value"><span id="batteryVoltage">--</span>V</div>
+            </div>
+          </div>
+
+          <div class="sensor-card power-card" onclick="openGraph('chargingCurrent')">
+            <div class="sensor-top">
+              <div class="icon">⚡</div>
+              <div class="chip">LIVE</div>
+            </div>
+            <div>
+              <div class="label">Charging Current</div>
+              <div class="value"><span id="chargingCurrent">--</span>A</div>
+            </div>
+          </div>
+
+          <div class="sensor-card power-card" onclick="openGraph('chargingPower')">
+            <div class="sensor-top">
+              <div class="icon">☀️</div>
+              <div class="chip">LIVE</div>
+            </div>
+            <div>
+              <div class="label">Solar Power</div>
+              <div class="value"><span id="chargingPower">--</span>W</div>
+            </div>
+          </div>
+
+          <div class="sensor-card power-card" onclick="openGraph('solarChargingStatus')">
+            <div class="sensor-top">
+              <div class="icon">🔌</div>
+              <div class="chip">LIVE</div>
+            </div>
+            <div>
+              <div class="label">Solar Charging Status</div>
+              <div class="small-value" id="solarStatus">--</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tap-note">📈 Tap any sensor or power card to view history data</div>
+
+        <div class="section-row">
+          <div>
+            <div class="section-title">Pump Control</div>
+            <div class="section-subtitle">Manual pump buttons unlock only when system mode is MANUAL.</div>
+          </div>
+        </div>
+
+        <div class="pump-grid">
+          <div class="pump-card">
+            <div class="pump-top">
+              <div class="pump-name">Borewell Pump</div>
+              <div class="badge off" id="pump1Badge">--</div>
+            </div>
+
+            <div class="button-row">
+              <button class="btn-on manual-control" onclick="setPump1('ON')">TURN ON</button>
+              <button class="btn-off manual-control" onclick="setPump1('OFF')">TURN OFF</button>
+            </div>
+          </div>
+
+          <div class="pump-card">
+            <div class="pump-top">
+              <div class="pump-name">Spare Tank Pump</div>
+              <div class="badge off" id="pump2Badge">--</div>
+            </div>
+
+            <div class="button-row">
+              <button class="btn-on manual-control" onclick="setPump2('ON')">TURN ON</button>
+              <button class="btn-off manual-control" onclick="setPump2('OFF')">TURN OFF</button>
+            </div>
+          </div>
+        </div>
+
+        <p class="manual-note" id="controlNote">
+          Pump status is taken from Firebase control.
+        </p>
+      </div>
+
+      <div class="footer">
+        IoT Smart Irrigation System By Izzat.hkl
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="userManagementModal" aria-hidden="true">
+    <div class="modal-content user-management-content">
+      <div class="modal-top user-management-header">
+        <div class="user-management-heading">
+          <span class="user-management-eyebrow">Administrator workspace</span>
+          <h2>User Management</h2>
+          <p class="user-management-subtitle">Approve registered accounts and assign the correct level of system access.</p>
+        </div>
+        <button class="close-btn" type="button" onclick="closeUserManagement()">Close</button>
+      </div>
+
+      <section class="user-management-metrics" aria-label="User account summary">
+        <article class="user-management-metric metric-total">
+          <span class="user-management-metric-label">Total Users</span>
+          <strong class="user-management-metric-value" id="userMetricTotal">—</strong>
+          <span class="user-management-metric-note">Registered accounts</span>
+        </article>
+        <article class="user-management-metric metric-pending">
+          <span class="user-management-metric-label">Pending</span>
+          <strong class="user-management-metric-value" id="userMetricPending">—</strong>
+          <span class="user-management-metric-note">Needs review</span>
+        </article>
+        <article class="user-management-metric metric-approved">
+          <span class="user-management-metric-label">Approved</span>
+          <strong class="user-management-metric-value" id="userMetricApproved">—</strong>
+          <span class="user-management-metric-note">Can sign in</span>
+        </article>
+        <article class="user-management-metric metric-rejected">
+          <span class="user-management-metric-label">Rejected</span>
+          <strong class="user-management-metric-value" id="userMetricRejected">—</strong>
+          <span class="user-management-metric-note">Access declined</span>
+        </article>
+      </section>
+
+      <div class="user-management-toolbar">
+        <div class="user-management-field user-management-search-field">
+          <label for="userManagementSearch">Search users</label>
+          <div class="user-management-input-shell">
+            <span class="user-management-search-icon" aria-hidden="true">⌕</span>
+            <input id="userManagementSearch" type="search" placeholder="Search by name or email" autocomplete="off" disabled>
+          </div>
+        </div>
+
+        <div class="user-management-field user-management-filter-field">
+          <label for="userManagementStatusFilter">Account status</label>
+          <select id="userManagementStatusFilter" disabled>
+            <option value="all">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="user-management-results-bar">
+        <p id="userManagementResultCount">Loading user accounts…</p>
+        <p class="user-management-results-hint">Review and save each account individually.</p>
+      </div>
+
+      <div class="user-management-message" id="userManagementMessage" aria-live="polite"></div>
+      <div class="user-management-list" id="userManagementList" role="list" aria-label="User accounts"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="graphModal">
+    <div class="modal-content">
+      <div class="modal-top">
+        <h2 id="graphTitle">Sensor History</h2>
+        <button class="close-btn" onclick="closeGraph()">Close</button>
+      </div>
+
+      <div class="history-controls">
+        <button onclick="moveHistory(-1)">← Older</button>
+
+        <input
+          type="range"
+          id="historySlider"
+          min="0"
+          max="0"
+          value="0"
+          oninput="slideHistory(this.value)"
+        >
+
+        <button onclick="moveHistory(1)">Newer →</button>
+
+        <div class="history-info" id="historyInfo">
+          Showing latest data
+        </div>
+      </div>
+
+      <div class="chart-box">
+        <canvas id="historyChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="firmwareUpdateModal" aria-hidden="true">
+    <div class="modal-content firmware-update-content" role="dialog" aria-modal="true" aria-labelledby="firmwareUpdateTitle">
+      <div class="modal-top firmware-update-header">
+        <div>
+          <span class="firmware-update-eyebrow">Remote OTA deployment</span>
+          <h2 id="firmwareUpdateTitle">ESP32-S3 Firmware Update</h2>
+          <p class="firmware-update-subtitle">Upload a compiled <strong>.bin</strong> file to the Orange Pi server and install it on the ESP32-S3.</p>
+        </div>
+        <button class="close-btn" id="firmwareUpdateCloseButton" type="button" onclick="closeFirmwareUpdate()">Close</button>
+      </div>
+
+      <section class="ota-device-card" aria-label="OTA device connection">
+        <div class="ota-device-icon" aria-hidden="true">📡</div>
+        <div class="ota-device-copy">
+          <span>Target device</span>
+          <strong>ESP32-S3 Smart Irrigation</strong>
+          <small id="otaLastUpdate">Last deployment: —</small>
+        </div>
+        <div class="ota-device-state is-checking" id="otaDeviceState">
+          <span class="ota-state-dot" aria-hidden="true"></span>
+          <span id="otaDeviceStatus">Checking…</span>
+        </div>
+      </section>
+
+      <form id="firmwareUpdateForm" class="firmware-update-form" onsubmit="uploadFirmware(event)">
+        <label class="ota-drop-zone" id="otaDropZone" for="firmwareFile">
+          <input id="firmwareFile" type="file" accept=".bin,application/octet-stream" onchange="selectFirmwareFile(this.files[0])">
+          <span class="ota-upload-icon" aria-hidden="true">⬆</span>
+          <strong>Choose firmware .bin file</strong>
+          <span>or drag and drop it here</span>
+          <small>ESP32 application image only · maximum 16 MB</small>
+        </label>
+
+        <div class="ota-file-card" id="otaFileCard" hidden>
+          <div class="ota-file-icon" aria-hidden="true">BIN</div>
+          <div class="ota-file-copy">
+            <strong id="otaFileName">—</strong>
+            <span id="otaFileSize">—</span>
+          </div>
+          <button type="button" class="ota-remove-file" id="otaRemoveFileButton" onclick="clearFirmwareFile()" aria-label="Remove selected firmware">Remove</button>
+        </div>
+
+        <label class="ota-version-field" for="firmwareVersion">
+          <span>Firmware version <small>(optional)</small></span>
+          <input id="firmwareVersion" type="text" maxlength="40" placeholder="Example: v2.1.0" autocomplete="off">
+        </label>
+
+        <label class="ota-confirm-field" for="firmwareConfirm">
+          <input id="firmwareConfirm" type="checkbox">
+          <span>I understand the ESP32-S3 will restart and may be offline briefly.</span>
+        </label>
+
+        <div class="ota-progress" id="otaProgress" hidden>
+          <div class="ota-progress-copy">
+            <span id="otaProgressLabel">Uploading to Orange Pi…</span>
+            <strong id="otaProgressPercent">0%</strong>
+          </div>
+          <div class="ota-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="otaProgressBar">
+            <span id="otaProgressFill"></span>
+          </div>
+        </div>
+
+        <div class="ota-message" id="otaMessage" role="status" aria-live="polite"></div>
+
+        <div class="ota-actions">
+          <button type="button" class="ota-cancel-btn" id="otaCancelButton" onclick="closeFirmwareUpdate()">Cancel</button>
+          <button type="submit" class="ota-install-btn" id="otaInstallButton" disabled>Upload &amp; Install</button>
+        </div>
+      </form>
+
+      <p class="ota-safety-note">Keep the Orange Pi and ESP32-S3 powered during installation. If installation fails, the currently running firmware remains active.</p>
+    </div>
+  </div>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
