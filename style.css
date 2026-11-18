@@ -42,6 +42,16 @@ body{font-size:15px;line-height:1.75}p{line-height:1.85}h1,h2,h3{font-weight:800
 @media(max-width:760px){.course-card .course-art svg.course-scene{height:178px}}
 
 /* Keep each page title and description together in one vertical text column. */
-.page-heading-copy{display:flex;flex-direction:column;align-items:flex-start;min-width:0;flex:1}.page-heading-copy>.eyebrow{display:block;margin:0 0 11px;width:auto;max-width:100%}.page-heading-copy>h1{display:block;width:100%;margin:0 0 13px;max-width:100%;text-align:left;word-break:normal;overflow-wrap:normal}.page-heading-copy>p{display:block;width:100%;max-width:700px;margin:0;text-align:left;line-height:1.8}#galeri>.page-heading{display:block;min-height:0;padding:34px 0 29px}#galeri .page-heading-copy{width:100%;max-width:none}#galeri .page-heading h1{font-size:38px;line-height:1.25;letter-spacing:-1px}#galeri .page-heading p{max-width:none}
-@media(max-width:760px){.page-heading-copy>.eyebrow{font-size:10px;line-height:1.65;margin-bottom:9px}.page-heading-copy>h1{line-height:1.25;margin-bottom:12px}.page-heading-copy>p{font-size:13px;line-height:1.85}#galeri>.page-heading{padding:28px 0 25px}#galeri .page-heading h1{font-size:32px;letter-spacing:-.8px}#galeri .page-heading p{font-size:13px}}
-@media(max-width:380px){#galeri .page-heading h1{font-size:29px;letter-spacing:-.6px}}
+.page-heading-copy{display:flex;flex-direction:column;align-items:flex-start;min-width:0;flex:1}.page-heading-copy>.eyebrow{display:block;margin:0 0 11px;width:auto;max-width:100%}.page-heading-copy>h1{display:block;width:100%;margin:0 0 13px;max-width:100%;text-align:left;word-break:normal;overflow-wrap:normal}.page-heading-copy>p{display:block;width:100%;max-width:700px;margin:0;text-align:left;line-height:1.8}
+@media(max-width:760px){.page-heading-copy>.eyebrow{font-size:10px;line-height:1.65;margin-bottom:9px}.page-heading-copy>h1{line-height:1.25;margin-bottom:12px}.page-heading-copy>p{font-size:13px;line-height:1.85}}
+@media(max-width:380px){}
+
+/* All section headings share one typography and spacing system. */
+.page-heading-copy{display:flex;flex-direction:column;align-items:flex-start;min-width:0;flex:1}
+.page-heading:has(>.eyebrow){display:block}
+.page-heading-copy>.eyebrow,.page-heading>.eyebrow{display:block;width:100%;font-size:11px;line-height:1.65;letter-spacing:.65px;margin:0 0 11px;text-align:left}
+.page-heading-copy>h1,.page-heading>h1{display:block;width:100%;max-width:100%;font-size:40px;line-height:1.2;letter-spacing:-1.1px;margin:0 0 13px;text-align:left;overflow-wrap:normal;word-break:normal}
+.page-heading-copy>p,.page-heading>p{display:block;width:100%;max-width:700px;font-size:14px;line-height:1.8;margin:0;text-align:left}
+@media(max-width:1100px){.page-heading-copy>h1,.page-heading>h1{font-size:36px}}
+@media(max-width:760px){.page-heading-copy>.eyebrow,.page-heading>.eyebrow{font-size:10px;line-height:1.65;margin-bottom:9px;letter-spacing:.4px}.page-heading-copy>h1,.page-heading>h1{font-size:30px;line-height:1.25;letter-spacing:-1.1px;margin-bottom:12px}.page-heading-copy>p,.page-heading>p{font-size:13px;line-height:1.85}}
+@media(max-width:380px){.page-heading-copy>h1,.page-heading>h1{font-size:27px}}
