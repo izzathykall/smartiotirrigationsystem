@@ -17,8 +17,6 @@ import {
   sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 import { getDatabase, ref, onValue, get, set, update, remove } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-database.js";
-// MODIFICATION: Import Firebase Messaging
-import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-messaging.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCbw3uRsDJroD8Z96aXXpduyIufZrwRhM0",
@@ -35,48 +33,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 auth.languageCode = "en";
 const database = getDatabase(app);
-
-// MODIFICATION: Initialize Messaging
-const messaging = getMessaging(app);
-
-// MODIFICATION: Push Notification Setup Function
-async function setupPushNotifications(userUid) {
-  try {
-    if (!("Notification" in window)) return;
-
-    const permission = await Notification.requestPermission();
-    
-    if (permission === "granted") {
-      const swRegistration = await navigator.serviceWorker.register('./firebase-messaging-sw.js', {
-        scope: './'
-      });
-
-      const token = await getToken(messaging, {
-        vapidKey: "BEzQHNigs0JY_MWDDUcx93Oee8R3tYp2b3yVqAHpAwvKpM6DlY23PHXWy0c-qgVRJq5qjRLfBTHbmUc_ft3Ktrw",
-        serviceWorkerRegistration: swRegistration
-      });
-
-      if (token) {
-        console.log("FCM Token berjaya didapati:", token);
-        // Simpan sebagai senarai multi-token supaya peranti lain tidak terpadam
-        await set(ref(database, `users/${userUid}/fcmTokens/${token}`), true);
-      }
-    }
-  } catch (error) {
-    console.error("Ralat mendapatkan token notifikasi:", error);
-  }
-}
-
-
-// MODIFICATION: Foreground Notification Handler
-onMessage(messaging, (payload) => {
-  console.log("Mesej diterima di foreground: ", payload);
-  const notificationTitle = payload.notification?.title || "Smart Herbs";
-  const notificationBody = payload.notification?.body || "Ada kemas kini baharu daripada sistem pengairan.";
-
-  alert(`${notificationTitle}\n${notificationBody}`);
-});
-
 
 const latestRef = ref(database, "sensor/latest");
 const historyRef = ref(database, "history");
@@ -413,6 +369,7 @@ window.forgotPassword = async function() {
     } else if (error?.code === "auth/network-request-failed") {
       setLoginMessage("Network error. Check your internet connection.");
     } else {
+      // Keep the message generic to avoid exposing whether an account exists.
       setLoginMessage("If the email is registered, a reset link will be sent.", "success");
     }
   }
@@ -780,24 +737,9 @@ window.logout = async function() {
   closeSettingsMenu();
 
   try {
-    const user = auth.currentUser;
-    if (user) {
-      const currentSwReg = await navigator.serviceWorker.getRegistration('./');
-      if (currentSwReg) {
-        const token = await getToken(messaging, { serviceWorkerRegistration: currentSwReg });
-        if (token) {
-          // Padam token dari senarai multi-token peranti ini
-          await remove(ref(database, `users/${user.uid}/fcmTokens/${token}`));
-          // Padam juga format token tunggal lama jika ada
-          await update(ref(database, `users/${user.uid}`), { fcmToken: null });
-        }
-      }
-    }
-
     await signOut(auth);
   } catch (error) {
     console.error("Logout failed", error);
-    await signOut(auth).catch(() => {});
     alert("Unable to log out. Please try again.");
   }
 };
@@ -846,6 +788,8 @@ function updateSettingsMenuPosition() {
 
   if (!menu || !button || !header) return;
 
+  // Desktop keeps the normal dropdown. Phone and tablet anchor the menu
+  // directly to the header so orientation changes cannot shift or clip it.
   if (!window.matchMedia("(max-width: 1180px)").matches) {
     resetSettingsMenuPosition();
     return;
@@ -865,6 +809,7 @@ function updateSettingsMenuPosition() {
   const viewportHeight = window.visualViewport?.height || window.innerHeight;
   const edgeGap = 10;
 
+  // Align the panel with the settings button in all orientations.
   const desiredLeft = settingsRect.right - menuWidth;
   const minimumLeft = Math.max(edgeGap, headerRect.left + edgeGap);
   const maximumLeft = Math.min(
@@ -873,9 +818,13 @@ function updateSettingsMenuPosition() {
   );
   const left = Math.max(minimumLeft, Math.min(desiredLeft, maximumLeft));
 
+  // Only reserve space above the status row when the two boxes overlap
+  // horizontally. On iPad landscape the status controls sit in a separate
+  // right column, so the menu can remain aligned with the title.
   const overlapsStatusHorizontally = statusRect &&
     left < statusRect.right &&
     left + menuWidth > statusRect.left;
+  // Put dropdown directly below the gear button instead of the title area.
   const desiredTop = settingsRect.bottom + 8;
   const minimumTop = Math.max(edgeGap, headerRect.top + edgeGap);
   const maximumTopFromStatus = overlapsStatusHorizontally
@@ -887,6 +836,8 @@ function updateSettingsMenuPosition() {
   );
   const top = Math.max(minimumTop, Math.min(desiredTop, maximumTop));
 
+  // The menu is absolutely positioned against the header on mobile/tablet.
+  // Convert viewport coordinates to header-local coordinates.
   menu.style.setProperty("--settings-menu-left", `${Math.round(left - headerRect.left)}px`);
   menu.style.setProperty(
     "--settings-menu-top",
@@ -1125,6 +1076,7 @@ function convertValue(field, value) {
     const percent = parsePercentValue(value);
     if (percent !== null) return percent;
 
+    //Fallback untuk data history lama yang masih guna HIGH/MIDDLE/LOW
     const normalized = String(value || "").toUpperCase();
     if (normalized === "LOW") return 18;
     if (normalized === "MIDDLE") return 52;
@@ -1174,6 +1126,7 @@ function makeTimeLabel(item, index) {
         minute: "2-digit"
       });
 
+      // Chart.js supports array labels as multi-line labels.
       return [dateLabel, timeLabel];
     }
   }
@@ -1354,6 +1307,7 @@ function getTankFillPercent(level, percentValue) {
   const levelPercent = parsePercentValue(level);
   if (levelPercent !== null) return levelPercent;
 
+  //Fallback untuk data lama yang masih guna HIGH/MIDDLE/LOW
   const normalized = String(level || "").toUpperCase();
   if (normalized === "HIGH") return 82;
   if (normalized === "MIDDLE") return 52;
@@ -1457,6 +1411,8 @@ function startFirebaseListeners() {
       allHistoryData = Object.values(data);
       allHistoryData.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
+      // If graph is not open, keep slider at latest data.
+      // If graph is open, maintain the user's current slider position.
       if (!currentGraphField) {
         historyStartIndex = Math.max(0, allHistoryData.length - historyWindowSize);
       }
@@ -1525,6 +1481,7 @@ window.openGraph = function(field) {
   modal.style.display = "flex";
   requestAnimationFrame(() => modal.classList.add("show"));
 
+  // Start from latest data whenever a graph is opened
   historyStartIndex = Math.max(0, allHistoryData.length - historyWindowSize);
   updateHistoryWindow();
 
@@ -1555,10 +1512,13 @@ onAuthStateChanged(auth, async user => {
     return;
   }
 
+  // createUserWithEmailAndPassword signs in automatically. Registration handles
+  // its own profile creation and logout, so do not open the app during that step.
   if (registrationInProgress) return;
 
   const profile = await resolveUserProfile(user);
 
+  // Ignore stale results if the account logged out while the profile was loading.
   if (auth.currentUser?.uid !== user.uid) return;
 
   const status = getProfileStatus(profile);
@@ -1582,9 +1542,6 @@ onAuthStateChanged(auth, async user => {
   setLoginMessage("");
   applyRolePermissions();
   startFirebaseListeners();
-  
-  // MODIFICATION: Trigger push notification setup when user logs in successfully
-  setupPushNotifications(user.uid);
 });
 
 setTheme(savedTheme);
