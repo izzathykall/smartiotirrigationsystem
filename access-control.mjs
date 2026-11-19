@@ -17,7 +17,3 @@ export function canManageUsers(role) {
 export function canDeleteAllHistory(role) {
   return normalizeRole(role) === "administrator";
 }
-
-export function canUpdateFirmware(role) {
-  return normalizeRole(role) === "administrator";
-}
